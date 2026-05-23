@@ -1,0 +1,8 @@
+# Terminal 1 — Pastikan MySQL jalan
+sudo systemctl start mysql
+
+# Terminal 2 — Backend
+cd ~/Documents/Rentalmobil/backend && node src/server.js
+
+# Terminal 3 — Frontend
+cd ~/Documents/Rentalmobil && npm run dev

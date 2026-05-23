@@ -1,0 +1,262 @@
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, Users, Settings, Fuel, Star, CheckCircle, XCircle,
+  Car, Calendar, UserCheck, ChevronRight, Shield, MapPin
+} from 'lucide-react';
+import { MOCK_CARS } from '../../data/mockCars';
+import { formatCurrency } from '../../utils/formatCurrency';
+import { calculateDays, getTodayString, getMinReturnDate } from '../../utils/dateHelper';
+import { useAuth } from '../../context/AuthContext';
+
+const CarDetailPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+
+  const car = MOCK_CARS.find((c) => c.id === Number(id));
+
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [withDriver, setWithDriver] = useState(false);
+
+  if (!car) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Car className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-700 mb-2">Kendaraan Tidak Ditemukan</h2>
+          <Link to="/katalog" className="btn-primary mt-4">Kembali ke Katalog</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const days = calculateDays(startDate, endDate);
+  const carCost = days * car.pricePerDay;
+  const driverCost = withDriver ? days * car.driverCostPerDay : 0;
+  const totalCost = carCost + driverCost;
+
+  const handleBooking = () => {
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: `/mobil/${id}` } });
+      return;
+    }
+    navigate(`/peminjaman/${id}`, {
+      state: { startDate, endDate, withDriver, days, totalCost },
+    });
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <Link to="/" className="hover:text-primary-700">Beranda</Link>
+        <ChevronRight className="w-3 h-3" />
+        <Link to="/katalog" className="hover:text-primary-700">Katalog</Link>
+        <ChevronRight className="w-3 h-3" />
+        <span className="text-gray-800 font-medium">{car.name}</span>
+      </div>
+
+      {/* Back button mobile */}
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-primary-700 font-medium mb-6 hover:underline lg:hidden">
+        <ArrowLeft className="w-4 h-4" /> Kembali
+      </button>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* === KOLOM KIRI: Detail Mobil === */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Gambar */}
+          <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-card">
+            <img
+              src={car.image}
+              alt={car.name}
+              className="w-full h-full object-cover"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          </div>
+
+          {/* Header Info */}
+          <div className="card p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="badge-success text-xs">{car.type}</span>
+                  <span className="text-xs text-gray-400">{car.brand} • {car.year}</span>
+                </div>
+                <h1 className="text-2xl font-display font-bold text-gray-800">{car.name}</h1>
+              </div>
+              {car.available
+                ? <span className="flex items-center gap-1.5 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full"><CheckCircle className="w-4 h-4" /> Tersedia</span>
+                : <span className="flex items-center gap-1.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full"><XCircle className="w-4 h-4" /> Tidak Tersedia</span>
+              }
+            </div>
+
+            {/* Rating */}
+            <div className="flex items-center gap-2 mb-5">
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map((i) => (
+                  <Star key={i} className={`w-4 h-4 ${i <= Math.round(car.rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
+                ))}
+              </div>
+              <span className="font-semibold text-gray-700">{car.rating}</span>
+              <span className="text-gray-400 text-sm">({car.totalReviews} ulasan)</span>
+            </div>
+
+            {/* Spesifikasi Grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
+              {[
+                { icon: Users, label: `${car.capacity} Penumpang` },
+                { icon: Settings, label: car.transmission },
+                { icon: Fuel, label: car.fuel },
+                { icon: Car, label: car.specs.engine },
+                { icon: Shield, label: 'Diasuransikan' },
+                { icon: MapPin, label: 'Antar-Jemput' },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="flex flex-col items-center gap-1 bg-gray-50 rounded-xl p-3 text-center">
+                  <Icon className="w-5 h-5 text-primary-700" />
+                  <span className="text-xs text-gray-600 leading-tight">{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Deskripsi */}
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2">Deskripsi</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">{car.description}</p>
+            </div>
+          </div>
+
+          {/* Fitur Kendaraan */}
+          <div className="card p-6">
+            <h3 className="font-semibold text-gray-800 mb-4">Fitur & Fasilitas</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {car.features.map((f) => (
+                <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                  {f}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Spesifikasi Teknis */}
+          <div className="card p-6">
+            <h3 className="font-semibold text-gray-800 mb-4">Spesifikasi Teknis</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {Object.entries(car.specs).map(([k, v]) => (
+                <div key={k} className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 capitalize">{k}</p>
+                  <p className="text-sm font-semibold text-gray-700">{v}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* === KOLOM KANAN: Booking Panel === */}
+        <div className="lg:col-span-1">
+          <div className="card p-6 sticky top-20">
+            <h3 className="font-display font-bold text-gray-800 text-lg mb-5">Hitung Biaya Sewa</h3>
+
+            {/* Harga Dasar */}
+            <div className="bg-primary-50 rounded-xl p-4 mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">Harga sewa / hari</p>
+                <p className="text-2xl font-display font-bold text-primary-800">{formatCurrency(car.pricePerDay)}</p>
+              </div>
+              <Car className="w-8 h-8 text-primary-300" />
+            </div>
+
+            {/* Date Picker */}
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="form-label flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary-700" /> Tanggal Mulai
+                </label>
+                <input
+                  type="date"
+                  min={getTodayString()}
+                  value={startDate}
+                  onChange={(e) => { setStartDate(e.target.value); setEndDate(''); }}
+                  className="form-input"
+                />
+              </div>
+              <div>
+                <label className="form-label flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary-700" /> Tanggal Kembali
+                </label>
+                <input
+                  type="date"
+                  min={startDate ? getMinReturnDate(startDate) : getTodayString()}
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  disabled={!startDate}
+                  className="form-input disabled:bg-gray-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* Opsi Dengan Sopir */}
+            <div
+              onClick={() => setWithDriver(!withDriver)}
+              className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all mb-5 ${
+                withDriver ? 'border-primary-800 bg-primary-50' : 'border-gray-200 hover:border-primary-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <UserCheck className={`w-5 h-5 ${withDriver ? 'text-primary-700' : 'text-gray-400'}`} />
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Dengan Sopir</p>
+                  <p className="text-xs text-gray-400">+{formatCurrency(car.driverCostPerDay)}/hari</p>
+                </div>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                withDriver ? 'border-primary-800 bg-primary-800' : 'border-gray-300'
+              }`}>
+                {withDriver && <CheckCircle className="w-3 h-3 text-white" />}
+              </div>
+            </div>
+
+            {/* Kalkulasi Biaya */}
+            {days > 0 && (
+              <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>{formatCurrency(car.pricePerDay)} × {days} hari</span>
+                  <span>{formatCurrency(carCost)}</span>
+                </div>
+                {withDriver && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Sopir × {days} hari</span>
+                    <span>{formatCurrency(driverCost)}</span>
+                  </div>
+                )}
+                <hr className="border-gray-200" />
+                <div className="flex justify-between font-bold text-gray-800 text-base">
+                  <span>Total</span>
+                  <span className="text-primary-800">{formatCurrency(totalCost)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Tombol Pesan */}
+            <button
+              onClick={handleBooking}
+              disabled={!car.available || !startDate || !endDate}
+              className="btn-primary w-full justify-center disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              {!car.available ? 'Tidak Tersedia' : !isLoggedIn ? 'Masuk untuk Memesan' : 'Pesan Sekarang'}
+            </button>
+            {!isLoggedIn && (
+              <p className="text-xs text-center text-gray-400 mt-2">
+                Belum punya akun? <Link to="/register" className="text-primary-700 font-medium hover:underline">Daftar gratis</Link>
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CarDetailPage;

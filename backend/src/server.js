@@ -1,0 +1,131 @@
+// ============================================================
+// SERVER.JS — Entry point backend RentalMobil
+// Express.js REST API dengan SQLite database
+// Port: 5001 (diatur via .env)
+// ============================================================
+
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+
+const express  = require('express');
+const cors     = require('cors');
+const helmet   = require('helmet');
+const morgan   = require('morgan');
+
+// Route files
+const authRoutes     = require('./routes/auth.routes');
+const carsRoutes     = require('./routes/cars.routes');
+const bookingsRoutes = require('./routes/bookings.routes');
+const usersRoutes    = require('./routes/users.routes');
+const paymentsRoutes = require('./routes/payments.routes');
+
+const app  = express();
+const PORT = process.env.PORT || 5001;
+
+// ============================================================
+// MIDDLEWARE GLOBAL
+// ============================================================
+
+// Security headers
+app.use(helmet());
+
+// CORS — izinkan semua localhost (dev mode)
+app.use(cors({
+  origin: (origin, callback) => {
+    // Izinkan: tanpa origin (curl/postman), localhost semua port
+    if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+
+// Parse JSON request body
+app.use(express.json({ limit: '10mb' }));
+
+// HTTP request logger (dev mode)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
+
+// ============================================================
+// ROUTES
+// ============================================================
+app.use('/api/auth',     authRoutes);
+app.use('/api/cars',     carsRoutes);
+app.use('/api/bookings', bookingsRoutes);
+app.use('/api/users',    usersRoutes);
+app.use('/api/payments', paymentsRoutes);
+
+// ──────────────────────────────────────────────────────────
+// Health Check — GET /api/health
+// ──────────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({
+    status:    'ok',
+    service:   'RentalMobil API',
+    version:   '1.0.0',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ──────────────────────────────────────────────────────────
+// Serve React Frontend (hasil build: dist/)
+// Semua request non-API diarahkan ke index.html
+// ──────────────────────────────────────────────────────────
+const path = require('path');
+const DIST_PATH = path.join(__dirname, '../../dist');
+
+app.use(express.static(DIST_PATH));
+
+app.get('*', (req, res) => {
+  const indexFile = path.join(DIST_PATH, 'index.html');
+  res.sendFile(indexFile, (err) => {
+    if (err) {
+      res.status(200).json({ message: 'RentalMobil API berjalan.' });
+    }
+  });
+});
+
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.method} ${req.path} tidak ditemukan.`,
+  });
+});
+
+// ──────────────────────────────────────────────────────────
+// Global Error Handler
+// ──────────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Terjadi kesalahan pada server.',
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+  });
+});
+
+// ============================================================
+// START SERVER
+// ============================================================
+app.listen(PORT, () => {
+  // console.log('\n╔════════════════════════════════════════╗');
+  // console.log('║   🚗  RentalMobil API Server           ║');
+  // console.log('╠════════════════════════════════════════╣');
+  // console.log(`║  Status  : ✅ Running                   ║`);
+  // console.log(`║  Port    : ${PORT}                           ║`);
+  // console.log(`║  URL     : http://localhost:${PORT}/api    ║`);
+  // console.log(`║  DB      : MySQL (${process.env.DB_NAME || 'rentalmobil'})           ║`);
+  // console.log(`║  Mode    : ${process.env.NODE_ENV || 'development'}                   ║`);
+  // console.log('╚════════════════════════════════════════╝\n');
+});
+
+module.exports = app;
