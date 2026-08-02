@@ -20,6 +20,21 @@ const pool = mysql.createPool({
   timezone:           '+07:00',
 });
 
+const ensureSessionIndex = async (conn, tableName, columnName) => {
+  const [indexes] = await conn.query(`SHOW INDEX FROM \`${tableName}\``);
+  const existingIndex = indexes.find((index) => index.Key_name === 'idx_session_id');
+
+  if (!existingIndex) {
+    await conn.query(`ALTER TABLE \`${tableName}\` ADD INDEX idx_session_id (\`${columnName}\`)`);
+    return;
+  }
+
+  if (existingIndex.Non_unique === 0) {
+    await conn.query(`ALTER TABLE \`${tableName}\` DROP INDEX \`idx_session_id\``);
+    await conn.query(`ALTER TABLE \`${tableName}\` ADD INDEX idx_session_id (\`${columnName}\`)`);
+  }
+};
+
 // ============================================================
 // INISIALISASI SCHEMA — Buat tabel jika belum ada
 // ============================================================
@@ -30,82 +45,140 @@ const initSchema = async () => {
     await conn.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'rentalmobil'}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await conn.query(`USE \`${process.env.DB_NAME || 'rentalmobil'}\``);
 
-    // ── TABEL: users ──────────────────────────────────────────
+    // Hapus tabel lama berbahasa Inggris yang tidak digunakan jika ada
+    await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+    await conn.query('DROP TABLE IF EXISTS bookings');
+    await conn.query('DROP TABLE IF EXISTS cars');
+    await conn.query('DROP TABLE IF EXISTS users');
+    await conn.query('DROP TABLE IF EXISTS chat_conversations');
+    await conn.query('DROP TABLE IF EXISTS chat_messages');
+    await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+
+    // ── TABEL: pengguna ──────────────────────────────────────────
     await conn.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id         INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        name       VARCHAR(150)   NOT NULL,
-        email      VARCHAR(150)   NOT NULL UNIQUE,
-        password   VARCHAR(255)   NOT NULL,
-        phone      VARCHAR(20)    DEFAULT '',
-        address    TEXT           DEFAULT NULL,
-        sim        VARCHAR(50)    DEFAULT '',
-        ktp        VARCHAR(50)    DEFAULT '',
-        avatar     VARCHAR(10)    DEFAULT '',
-        role       ENUM('user','admin')   NOT NULL DEFAULT 'user',
-        status     ENUM('active','blocked') NOT NULL DEFAULT 'active',
-        created_at DATETIME       DEFAULT CURRENT_TIMESTAMP,
+      CREATE TABLE IF NOT EXISTS pengguna (
+        id          INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        nama        VARCHAR(150)   NOT NULL,
+        email       VARCHAR(150)   NOT NULL UNIQUE,
+        kata_sandi  VARCHAR(255)   NOT NULL,
+        telepon     VARCHAR(20)    DEFAULT '',
+        alamat      TEXT           DEFAULT NULL,
+        sim         VARCHAR(50)    DEFAULT '',
+        ktp         VARCHAR(50)    DEFAULT '',
+        avatar      VARCHAR(10)    DEFAULT '',
+        peran       ENUM('user','admin')   NOT NULL DEFAULT 'user',
+        status      ENUM('aktif','diblokir') NOT NULL DEFAULT 'aktif',
+        dibuat_pada DATETIME       DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_email (email),
-        INDEX idx_role  (role)
+        INDEX idx_peran (peran)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
-    // ── TABEL: cars ───────────────────────────────────────────
+    // ── TABEL: mobil ───────────────────────────────────────────
     await conn.query(`
-      CREATE TABLE IF NOT EXISTS cars (
-        id                  INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        name                VARCHAR(150)   NOT NULL,
-        brand               VARCHAR(100)   NOT NULL,
-        type                VARCHAR(50)    NOT NULL DEFAULT 'MPV',
-        year                YEAR           DEFAULT '2023',
-        capacity            TINYINT        DEFAULT 5,
-        transmission        VARCHAR(20)    DEFAULT 'Manual',
-        fuel                VARCHAR(20)    DEFAULT 'Bensin',
-        price_per_day       DECIMAL(12,2)  NOT NULL,
-        driver_cost_per_day DECIMAL(12,2)  DEFAULT 150000.00,
-        available           TINYINT(1)     NOT NULL DEFAULT 1,
-        description         TEXT           DEFAULT NULL,
-        color               VARCHAR(50)    DEFAULT '',
-        plate_number        VARCHAR(20)    DEFAULT '',
-        image               TEXT           DEFAULT NULL,
-        rating              DECIMAL(3,1)   DEFAULT 4.5,
-        total_reviews       INT            DEFAULT 0,
-        features            JSON           DEFAULT NULL,
-        specs               JSON           DEFAULT NULL,
-        created_at          DATETIME       DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_available (available),
-        INDEX idx_type      (type),
-        INDEX idx_brand     (brand)
+      CREATE TABLE IF NOT EXISTS mobil (
+        id                    INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        nama                  VARCHAR(150)   NOT NULL,
+        merek                 VARCHAR(100)   NOT NULL,
+        tipe                  VARCHAR(50)    NOT NULL DEFAULT 'MPV',
+        tahun                 YEAR           DEFAULT '2023',
+        kapasitas             TINYINT        DEFAULT 5,
+        transmisi             VARCHAR(20)    DEFAULT 'Manual',
+        bahan_bakar           VARCHAR(20)    DEFAULT 'Bensin',
+        harga_per_hari        DECIMAL(12,2)  NOT NULL,
+        biaya_sopir_per_hari  DECIMAL(12,2)  DEFAULT 150000.00,
+        tersedia              TINYINT(1)     NOT NULL DEFAULT 1,
+        sedang_perbaikan      TINYINT(1)     DEFAULT 0,
+        deskripsi             TEXT           DEFAULT NULL,
+        warna                 VARCHAR(50)    DEFAULT '',
+        nomor_plat            VARCHAR(20)    DEFAULT '',
+        gambar                TEXT           DEFAULT NULL,
+        rating                DECIMAL(3,1)   DEFAULT 4.5,
+        total_ulasan          INT            DEFAULT 0,
+        fitur                 JSON           DEFAULT NULL,
+        spesifikasi           JSON           DEFAULT NULL,
+        dibuat_pada           DATETIME       DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tersedia (tersedia),
+        INDEX idx_tipe     (tipe),
+        INDEX idx_merek    (merek)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
-    // ── TABEL: bookings ───────────────────────────────────────
+    // ── TABEL: peminjaman ───────────────────────────────────────
     await conn.query(`
-      CREATE TABLE IF NOT EXISTS bookings (
+      CREATE TABLE IF NOT EXISTS peminjaman (
         id                     VARCHAR(20)   NOT NULL PRIMARY KEY,
-        user_id                INT           NOT NULL,
-        car_id                 INT           NOT NULL,
-        start_date             DATE          NOT NULL,
-        end_date               DATE          NOT NULL,
-        days                   SMALLINT      NOT NULL,
-        pickup_location        TEXT          DEFAULT NULL,
-        with_driver            TINYINT(1)    DEFAULT 0,
-        total_cost             DECIMAL(15,2) NOT NULL,
-        notes                  TEXT          DEFAULT NULL,
+        pengguna_id            INT           NOT NULL,
+        mobil_id               INT           NOT NULL,
+        tanggal_mulai          DATE          NOT NULL,
+        tanggal_kembali        DATE          NOT NULL,
+        durasi_hari            SMALLINT      NOT NULL,
+        lokasi_penjemputan     TEXT          DEFAULT NULL,
+        dengan_sopir           TINYINT(1)    DEFAULT 0,
+        total_biaya            DECIMAL(15,2) NOT NULL,
+        catatan                TEXT          DEFAULT NULL,
         status                 ENUM('pending','approved','active','completed','cancelled') NOT NULL DEFAULT 'pending',
-        payment_status         ENUM('unpaid','paid') NOT NULL DEFAULT 'unpaid',
-        payment_method         VARCHAR(50)   DEFAULT '',
-        payment_transaction_id VARCHAR(100)  DEFAULT '',
-        payment_date           DATETIME      DEFAULT NULL,
-        created_at             DATETIME      DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (car_id)  REFERENCES cars(id)  ON DELETE CASCADE,
-        INDEX idx_user_id       (user_id),
-        INDEX idx_car_id        (car_id),
-        INDEX idx_status        (status),
-        INDEX idx_payment_status(payment_status)
+        status_pembayaran      ENUM('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar',
+        metode_pembayaran      VARCHAR(50)   DEFAULT '',
+        transaksi_pembayaran_id VARCHAR(100)  DEFAULT '',
+        tanggal_pembayaran     DATETIME      DEFAULT NULL,
+        dibuat_pada            DATETIME      DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (pengguna_id) REFERENCES pengguna(id) ON DELETE CASCADE,
+        FOREIGN KEY (mobil_id)  REFERENCES mobil(id)  ON DELETE CASCADE,
+        INDEX idx_pengguna_id       (pengguna_id),
+        INDEX idx_mobil_id          (mobil_id),
+        INDEX idx_status            (status),
+        INDEX idx_status_pembayaran (status_pembayaran),
+        INDEX idx_transaksi_pembayaran_id (transaksi_pembayaran_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // ── TABEL: chat_percakapan ─────────────────────────────
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS chat_percakapan (
+        id                   INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        pengguna_id          INT            NOT NULL,
+        status               ENUM('aktif','ditutup') NOT NULL DEFAULT 'aktif',
+        admin_mode           TINYINT(1)     DEFAULT 0,
+        jumlah_belum_dibaca  INT            DEFAULT 0,
+        session_id           VARCHAR(50)    NOT NULL DEFAULT '',
+        pesan_terakhir_pada  DATETIME       DEFAULT CURRENT_TIMESTAMP,
+        dibuat_pada          DATETIME       DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (pengguna_id) REFERENCES pengguna(id) ON DELETE CASCADE,
+        INDEX idx_pengguna_id (pengguna_id),
+        INDEX idx_status  (status),
+        INDEX idx_session_id (session_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    await conn.query(
+      `ALTER TABLE chat_percakapan ADD COLUMN IF NOT EXISTS session_id VARCHAR(50) NOT NULL DEFAULT '' AFTER jumlah_belum_dibaca`
+    );
+    await conn.query(
+      `ALTER TABLE chat_percakapan ADD COLUMN IF NOT EXISTS admin_mode TINYINT(1) DEFAULT 0 AFTER status`
+    );
+    await ensureSessionIndex(conn, 'chat_percakapan', 'session_id');
+
+    // ── TABEL: chat_pesan ──────────────────────────────────
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS chat_pesan (
+        id             INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        percakapan_id  INT            NOT NULL,
+        session_id     VARCHAR(50)    NOT NULL DEFAULT '',
+        peran_pengirim ENUM('user','bot','admin') NOT NULL,
+        nama_pengirim  VARCHAR(150)   NOT NULL DEFAULT '',
+        isi_pesan      TEXT           NOT NULL,
+        sudah_dibaca   TINYINT(1)     NOT NULL DEFAULT 0,
+        dibuat_pada    DATETIME       DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (percakapan_id) REFERENCES chat_percakapan(id) ON DELETE CASCADE,
+        INDEX idx_percakapan (percakapan_id),
+        INDEX idx_session_id (session_id),
+        INDEX idx_peran_pengirim  (peran_pengirim)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    await conn.query(
+      `ALTER TABLE chat_pesan ADD COLUMN IF NOT EXISTS session_id VARCHAR(50) NOT NULL DEFAULT '' AFTER percakapan_id`
+    );
+    await ensureSessionIndex(conn, 'chat_pesan', 'session_id');
 
     console.log('[DB] ✅ Schema MySQL berhasil diinisialisasi');
   } finally {
@@ -116,7 +189,7 @@ const initSchema = async () => {
 // Jalankan schema saat module ini pertama kali diload
 initSchema().catch((err) => {
   console.error('[DB] ❌ Gagal inisialisasi schema:', err.message);
-  process.exit(1);
+  console.error('[DB] ⚠️ Backend tetap berjalan, tapi fitur database tidak akan berfungsi hingga MySQL dinyalakan.');
 });
 
 module.exports = pool;

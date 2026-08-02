@@ -162,7 +162,7 @@ const VirtualAccountUI = ({ method, amount, vaNumber }) => (
 // KOMPONEN: QRIS UI
 // ============================================================
 const QrisUI = ({ amount, orderId }) => {
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=RENTALMOBIL-${orderId}-${amount}&bgcolor=FFFFFF&color=166534&margin=10`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SUBULUSSALAM-${orderId}-${amount}&bgcolor=FFFFFF&color=0f172a&margin=10`;
   return (
     <div className="space-y-4 animate-fade-in text-center">
       <div className="bg-gray-50 rounded-2xl p-6 inline-block mx-auto">
@@ -474,7 +474,7 @@ const PaymentGateway = ({ isOpen, booking, onSuccess, onClose }) => {
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-display font-bold text-white text-base leading-tight">RentalMobil Pay</p>
+              <p className="font-display font-bold text-white text-base leading-tight uppercase">Subulussalam Pay</p>
               <p className="text-primary-200 text-xs">Pembayaran Aman & Terenkripsi</p>
             </div>
           </div>

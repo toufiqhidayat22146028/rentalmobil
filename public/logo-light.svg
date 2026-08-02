@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300" width="100%" height="100%">
+  <!-- Latar Belakang Transparan -->
+  <rect width="600" height="300" fill="transparent"/>
+
+  <g transform="translate(0, 0)">
+    <!-- Lingkaran Atas Emas -->
+    <path d="M 120 160 C 150 10, 450 10, 480 160" fill="none" stroke="#D4AF37" stroke-width="10" stroke-linecap="round"/>
+    
+    <!-- Lingkaran Bawah Putih -->
+    <path d="M 170 230 C 230 290, 370 290, 430 230" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- Siluet Mobil Putih/Emas -->
+    <g transform="translate(300, 110) scale(1.3)">
+      <!-- Body Mobil Belakang & Atap -->
+      <path d="M -150 30 Q -100 10, -50 -10 Q 0 -30, 50 -10 Q 100 10, 150 30" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+      <!-- Body Mobil Bawah -->
+      <path d="M -160 40 L 160 40" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+      <!-- Garis emas aksen mobil -->
+      <path d="M -100 35 Q 0 20, 100 35" fill="none" stroke="#D4AF37" stroke-width="5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Teks Utama SUBULUSSALAM -->
+    <text x="300" y="195" font-family="'Arial Black', Impact, sans-serif" font-weight="900" font-size="52" font-style="italic" text-anchor="middle" letter-spacing="1">
+      <tspan fill="#FFFFFF">SUBULUS</tspan><tspan fill="#D4AF37">SALAM</tspan>
+    </text>
+
+    <!-- Teks RENT CAR -->
+    <line x1="160" y1="215" x2="210" y2="215" stroke="#D4AF37" stroke-width="3" stroke-linecap="round"/>
+    <text x="300" y="222" font-family="'Arial Black', sans-serif" font-weight="bold" font-size="22" fill="#FFFFFF" text-anchor="middle" letter-spacing="12">
+      RENT CAR
+    </text>
+    <line x1="390" y1="215" x2="440" y2="215" stroke="#D4AF37" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Teks Slogan -->
+    <text x="300" y="248" font-family="Arial, sans-serif" font-weight="bold" font-size="12" fill="#FFFFFF" text-anchor="middle" letter-spacing="5">
+      AMAN <tspan fill="#D4AF37">•</tspan> NYAMAN <tspan fill="#D4AF37">•</tspan> TERPERCAYA
+    </text>
+  </g>
+</svg>

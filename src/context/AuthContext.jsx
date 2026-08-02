@@ -10,9 +10,13 @@ export const AuthProvider = ({ children }) => {
   // User state — inisialisasi dari localStorage
   const [user, setUser] = useState(() => {
     try {
+      const token = localStorage.getItem('rm_token');
+      if (!token) return null;
       const saved = localStorage.getItem('rm_user');
       return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   // Sinkronisasi user state ke localStorage setiap kali berubah
   useEffect(() => {
     if (user) localStorage.setItem('rm_user', JSON.stringify(user));
-    else       localStorage.removeItem('rm_user');
+    else localStorage.removeItem('rm_user');
   }, [user]);
 
   // ──────────────────────────────────────────────────────────
@@ -29,10 +33,12 @@ export const AuthProvider = ({ children }) => {
   // ──────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem('rm_token');
-    if (token && !user) return; // Sudah ada user dari localStorage
-    if (!token) return;         // Tidak ada token, tidak perlu fetch
+    if (!token) {
+      if (user) logout();
+      return;
+    }
+    if (user) return;
 
-    // Verifikasi token dengan endpoint /me
     authAPI.getMe()
       .then(({ data }) => {
         if (data.success) {
@@ -44,7 +50,7 @@ export const AuthProvider = ({ children }) => {
         // Token invalid/expired → logout
         logout();
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ──────────────────────────────────────────────────────────
   // LOGIN

@@ -34,67 +34,106 @@ const run = async () => {
 
   // ── Buat tabel ────────────────────────────────────────────
   await conn.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      name       VARCHAR(150) NOT NULL,
-      email      VARCHAR(150) NOT NULL UNIQUE,
-      password   VARCHAR(255) NOT NULL,
-      phone      VARCHAR(20)  DEFAULT '',
-      address    TEXT,
-      sim        VARCHAR(50)  DEFAULT '',
-      ktp        VARCHAR(50)  DEFAULT '',
-      avatar     VARCHAR(10)  DEFAULT '',
-      role       ENUM('user','admin') NOT NULL DEFAULT 'user',
-      status     ENUM('active','blocked') NOT NULL DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    CREATE TABLE IF NOT EXISTS pengguna (
+      id          INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      nama        VARCHAR(150)   NOT NULL,
+      email       VARCHAR(150)   NOT NULL UNIQUE,
+      kata_sandi  VARCHAR(255)   NOT NULL,
+      telepon     VARCHAR(20)    DEFAULT '',
+      alamat      TEXT           DEFAULT NULL,
+      sim         VARCHAR(50)    DEFAULT '',
+      ktp         VARCHAR(50)    DEFAULT '',
+      avatar      VARCHAR(10)    DEFAULT '',
+      peran       ENUM('user','admin')   NOT NULL DEFAULT 'user',
+      status      ENUM('aktif','diblokir') NOT NULL DEFAULT 'aktif',
+      dibuat_pada DATETIME       DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_email (email),
+      INDEX idx_peran (peran)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
   await conn.query(`
-    CREATE TABLE IF NOT EXISTS cars (
-      id                  INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      name                VARCHAR(150) NOT NULL,
-      brand               VARCHAR(100) NOT NULL,
-      type                VARCHAR(50)  DEFAULT 'MPV',
-      year                YEAR         DEFAULT '2023',
-      capacity            TINYINT      DEFAULT 5,
-      transmission        VARCHAR(20)  DEFAULT 'Manual',
-      fuel                VARCHAR(20)  DEFAULT 'Bensin',
-      price_per_day       DECIMAL(12,2) NOT NULL,
-      driver_cost_per_day DECIMAL(12,2) DEFAULT 150000.00,
-      available           TINYINT(1)   DEFAULT 1,
-      description         TEXT,
-      color               VARCHAR(50)  DEFAULT '',
-      plate_number        VARCHAR(20)  DEFAULT '',
-      image               TEXT,
-      rating              DECIMAL(3,1) DEFAULT 4.5,
-      total_reviews       INT          DEFAULT 0,
-      features            JSON,
-      specs               JSON,
-      created_at          DATETIME     DEFAULT CURRENT_TIMESTAMP
+    CREATE TABLE IF NOT EXISTS mobil (
+      id                    INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      nama                  VARCHAR(150)   NOT NULL,
+      merek                 VARCHAR(100)   NOT NULL,
+      tipe                  VARCHAR(50)    NOT NULL DEFAULT 'MPV',
+      tahun                 YEAR           DEFAULT '2023',
+      kapasitas             TINYINT        DEFAULT 5,
+      transmisi             VARCHAR(20)    DEFAULT 'Manual',
+      bahan_bakar           VARCHAR(20)    DEFAULT 'Bensin',
+      harga_per_hari        DECIMAL(12,2)  NOT NULL,
+      biaya_sopir_per_hari  DECIMAL(12,2)  DEFAULT 150000.00,
+      tersedia              TINYINT(1)     NOT NULL DEFAULT 1,
+      deskripsi             TEXT           DEFAULT NULL,
+      warna                 VARCHAR(50)    DEFAULT '',
+      nomor_plat            VARCHAR(20)    DEFAULT '',
+      gambar                TEXT           DEFAULT NULL,
+      rating                DECIMAL(3,1)   DEFAULT 4.5,
+      total_ulasan          INT            DEFAULT 0,
+      fitur                 JSON           DEFAULT NULL,
+      spesifikasi           JSON           DEFAULT NULL,
+      dibuat_pada           DATETIME       DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_tersedia (tersedia),
+      INDEX idx_tipe     (tipe),
+      INDEX idx_merek    (merek)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
   await conn.query(`
-    CREATE TABLE IF NOT EXISTS bookings (
-      id                     VARCHAR(20) NOT NULL PRIMARY KEY,
-      user_id                INT NOT NULL,
-      car_id                 INT NOT NULL,
-      start_date             DATE NOT NULL,
-      end_date               DATE NOT NULL,
-      days                   SMALLINT NOT NULL,
-      pickup_location        TEXT,
-      with_driver            TINYINT(1) DEFAULT 0,
-      total_cost             DECIMAL(15,2) NOT NULL,
-      notes                  TEXT,
+    CREATE TABLE IF NOT EXISTS peminjaman (
+      id                     VARCHAR(20)   NOT NULL PRIMARY KEY,
+      pengguna_id            INT           NOT NULL,
+      mobil_id               INT           NOT NULL,
+      tanggal_mulai          DATE          NOT NULL,
+      tanggal_kembali        DATE          NOT NULL,
+      durasi_hari            SMALLINT      NOT NULL,
+      lokasi_penjemputan     TEXT          DEFAULT NULL,
+      dengan_sopir           TINYINT(1)    DEFAULT 0,
+      total_biaya            DECIMAL(15,2) NOT NULL,
+      catatan                TEXT          DEFAULT NULL,
       status                 ENUM('pending','approved','active','completed','cancelled') NOT NULL DEFAULT 'pending',
-      payment_status         ENUM('unpaid','paid') NOT NULL DEFAULT 'unpaid',
-      payment_method         VARCHAR(50)  DEFAULT '',
-      payment_transaction_id VARCHAR(100) DEFAULT '',
-      payment_date           DATETIME     DEFAULT NULL,
-      created_at             DATETIME     DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (car_id)  REFERENCES cars(id)  ON DELETE CASCADE
+      status_pembayaran      ENUM('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar',
+      metode_pembayaran      VARCHAR(50)   DEFAULT '',
+      transaksi_pembayaran_id VARCHAR(100)  DEFAULT '',
+      tanggal_pembayaran     DATETIME      DEFAULT NULL,
+      dibuat_pada            DATETIME      DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (pengguna_id) REFERENCES pengguna(id) ON DELETE CASCADE,
+      FOREIGN KEY (mobil_id)  REFERENCES mobil(id)  ON DELETE CASCADE,
+      INDEX idx_pengguna_id       (pengguna_id),
+      INDEX idx_mobil_id          (mobil_id),
+      INDEX idx_status            (status),
+      INDEX idx_status_pembayaran (status_pembayaran),
+      INDEX idx_transaksi_pembayaran_id (transaksi_pembayaran_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS chat_percakapan (
+      id                   INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      pengguna_id          INT            NOT NULL,
+      status               ENUM('aktif','ditutup') NOT NULL DEFAULT 'aktif',
+      jumlah_belum_dibaca  INT            DEFAULT 0,
+      pesan_terakhir_pada  DATETIME       DEFAULT CURRENT_TIMESTAMP,
+      dibuat_pada          DATETIME       DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (pengguna_id) REFERENCES pengguna(id) ON DELETE CASCADE,
+      INDEX idx_pengguna_id (pengguna_id),
+      INDEX idx_status  (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS chat_pesan (
+      id             INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      percakapan_id  INT            NOT NULL,
+      peran_pengirim ENUM('user','bot','admin') NOT NULL,
+      nama_pengirim  VARCHAR(150)   NOT NULL DEFAULT '',
+      isi_pesan      TEXT           NOT NULL,
+      sudah_dibaca   TINYINT(1)     NOT NULL DEFAULT 0,
+      dibuat_pada    DATETIME       DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (percakapan_id) REFERENCES chat_percakapan(id) ON DELETE CASCADE,
+      INDEX idx_percakapan (percakapan_id),
+      INDEX idx_peran_pengirim  (peran_pengirim)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
@@ -102,14 +141,24 @@ const run = async () => {
   if (isFresh) {
     console.log('[SEED] 🗑️  Menghapus data lama (--fresh)...');
     await conn.query('SET FOREIGN_KEY_CHECKS = 0');
-    await conn.query('TRUNCATE TABLE bookings');
-    await conn.query('TRUNCATE TABLE cars');
-    await conn.query('TRUNCATE TABLE users');
+    
+    // Hapus tabel lama berbahasa Inggris yang tidak digunakan jika ada
+    await conn.query('DROP TABLE IF EXISTS bookings');
+    await conn.query('DROP TABLE IF EXISTS cars');
+    await conn.query('DROP TABLE IF EXISTS users');
+    await conn.query('DROP TABLE IF EXISTS chat_conversations');
+    await conn.query('DROP TABLE IF EXISTS chat_messages');
+
+    await conn.query('TRUNCATE TABLE peminjaman');
+    await conn.query('TRUNCATE TABLE mobil');
+    await conn.query('TRUNCATE TABLE pengguna');
+    await conn.query('TRUNCATE TABLE chat_pesan');
+    await conn.query('TRUNCATE TABLE chat_percakapan');
     await conn.query('SET FOREIGN_KEY_CHECKS = 1');
   }
 
   // ── Cek apakah data sudah ada ─────────────────────────────
-  const [[{ cnt }]] = await conn.query('SELECT COUNT(*) AS cnt FROM users');
+  const [[{ cnt }]] = await conn.query('SELECT COUNT(*) AS cnt FROM pengguna');
   if (cnt > 0 && !isFresh) {
     console.log('[SEED] ⚠️  Data sudah ada. Gunakan --fresh untuk reset.');
     await conn.end();
@@ -123,15 +172,15 @@ const run = async () => {
     { name: 'Budi Santoso',   email: 'user@test.com',         password: 'user123',  phone: '08129876543', address: 'Jl. Merdeka No.10, Bandung',        role: 'user',  avatar: 'BS' },
     { name: 'Sari Wulandari', email: 'sari@test.com',         password: 'user123',  phone: '08211122334', address: 'Jl. Sudirman No.5, Surabaya',       role: 'user',  avatar: 'SW' },
     { name: 'Rina Kusuma',    email: 'rina@test.com',         password: 'user123',  phone: '08563344556', address: 'Jl. Gatot Subroto No.88, Jakarta',  role: 'user',  avatar: 'RK' },
-    { name: 'Agus Prasetyo',  email: 'agus@test.com',         password: 'user123',  phone: '08774455667', address: 'Jl. Ahmad Yani No.22, Yogyakarta',  role: 'user',  avatar: 'AP', status: 'blocked' },
+    { name: 'Agus Prasetyo',  email: 'agus@test.com',         password: 'user123',  phone: '08774455667', address: 'Jl. Ahmad Yani No.22, Yogyakarta',  role: 'user',  avatar: 'AP', status: 'diblokir' },
   ];
 
   const userIds = {};
   for (const u of USERS) {
     const hashed = await bcrypt.hash(u.password, 10);
     const [res] = await conn.query(
-      'INSERT INTO users (name, email, password, phone, address, role, status, avatar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [u.name, u.email, hashed, u.phone, u.address, u.role, u.status || 'active', u.avatar]
+      'INSERT INTO pengguna (nama, email, kata_sandi, telepon, alamat, peran, status, avatar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [u.name, u.email, hashed, u.phone, u.address, u.role, u.status || 'aktif', u.avatar]
     );
     userIds[u.email] = res.insertId;
     console.log(`   ✓ User [${res.insertId}]: ${u.email}`);
@@ -157,9 +206,9 @@ const run = async () => {
   const carIds = {};
   for (const car of CARS) {
     const [res] = await conn.query(
-      `INSERT INTO cars (name, brand, type, year, capacity, transmission, fuel, price_per_day,
-        driver_cost_per_day, available, description, color, plate_number, image, rating,
-        total_reviews, features, specs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO mobil (nama, merek, tipe, tahun, kapasitas, transmisi, bahan_bakar, harga_per_hari,
+        biaya_sopir_per_hari, tersedia, deskripsi, warna, nomor_plat, gambar, rating,
+        total_ulasan, fitur, spesifikasi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [car.name, car.brand, car.type, car.year, car.capacity, car.transmission, car.fuel,
        car.price_per_day, car.driver_cost_per_day, car.available, car.description,
        car.color, car.plate_number, car.image, car.rating, car.total_reviews,
@@ -175,18 +224,18 @@ const run = async () => {
   const cid = carIds;
 
   const BOOKINGS = [
-    { id: 'BK-001', user_id: uid['user@test.com'], car_id: cid['Toyota Avanza'],        start_date: '2026-05-10', end_date: '2026-05-13', days: 3, pickup_location: 'Kantor Pusat – Jl. Admin No.1, Jakarta',           with_driver: 0, total_cost: 840000,   notes: 'Tolong siapkan mobil bersih.',  status: 'completed', payment_status: 'paid',   payment_method: 'Transfer Bank', payment_transaction_id: 'TRX-RM-SEED-001' },
-    { id: 'BK-002', user_id: uid['sari@test.com'], car_id: cid['Toyota Fortuner'],      start_date: '2026-05-20', end_date: '2026-05-22', days: 2, pickup_location: 'Antar ke Alamat – Jl. Sudirman No.5, Surabaya',  with_driver: 1, total_cost: 1700000,  notes: '',                              status: 'active',    payment_status: 'paid',   payment_method: 'QRIS',          payment_transaction_id: 'TRX-RM-SEED-002' },
-    { id: 'BK-003', user_id: uid['rina@test.com'], car_id: cid['Toyota Camry'],         start_date: '2026-05-25', end_date: '2026-05-26', days: 1, pickup_location: 'Kantor Pusat – Jl. Admin No.1, Jakarta',           with_driver: 1, total_cost: 800000,   notes: 'Untuk acara pernikahan.',       status: 'approved',  payment_status: 'unpaid', payment_method: '',              payment_transaction_id: '' },
-    { id: 'BK-004', user_id: uid['user@test.com'], car_id: cid['Toyota Innova Reborn'], start_date: '2026-06-01', end_date: '2026-06-04', days: 3, pickup_location: 'Kantor Pusat – Jl. Admin No.1, Jakarta',           with_driver: 0, total_cost: 1350000,  notes: 'Perjalanan wisata ke Bogor.',  status: 'pending',   payment_status: 'unpaid', payment_method: '',              payment_transaction_id: '' },
-    { id: 'BK-005', user_id: uid['sari@test.com'], car_id: cid['Honda Brio Satya'],     start_date: '2026-04-15', end_date: '2026-04-17', days: 2, pickup_location: 'Antar ke Alamat – Jl. Sudirman No.5, Surabaya',  with_driver: 0, total_cost: 400000,   notes: '',                              status: 'completed', payment_status: 'paid',   payment_method: 'GoPay',         payment_transaction_id: 'TRX-RM-SEED-005' },
-    { id: 'BK-006', user_id: uid['rina@test.com'], car_id: cid['Toyota Alphard'],       start_date: '2026-06-10', end_date: '2026-06-11', days: 1, pickup_location: 'Antar ke Alamat – Jl. Gatot Subroto No.88, Jakarta',with_driver: 1,total_cost: 1500000, notes: 'VIP untuk tamu undangan.',     status: 'pending',   payment_status: 'unpaid', payment_method: '',              payment_transaction_id: '' },
+    { id: 'BK-001', user_id: uid['user@test.com'], car_id: cid['Toyota Avanza'],        start_date: '2026-05-10', end_date: '2026-05-13', days: 3, pickup_location: 'Kantor Pusat – Jl. Admin No.1, Jakarta',           with_driver: 0, total_cost: 840000,   notes: 'Tolong siapkan mobil bersih.',  status: 'completed', payment_status: 'lunas',   payment_method: 'Transfer Bank', payment_transaction_id: 'TRX-RM-SEED-001' },
+    { id: 'BK-002', user_id: uid['sari@test.com'], car_id: cid['Toyota Fortuner'],      start_date: '2026-05-20', end_date: '2026-05-22', days: 2, pickup_location: 'Antar ke Alamat – Jl. Sudirman No.5, Surabaya',  with_driver: 1, total_cost: 1700000,  notes: '',                              status: 'active',    payment_status: 'lunas',   payment_method: 'QRIS',          payment_transaction_id: 'TRX-RM-SEED-002' },
+    { id: 'BK-003', user_id: uid['rina@test.com'], car_id: cid['Toyota Camry'],         start_date: '2026-05-25', end_date: '2026-05-26', days: 1, pickup_location: 'Kantor Pusat – Jl. Admin No.1, Jakarta',           with_driver: 1, total_cost: 800000,   notes: 'Untuk acara pernikahan.',       status: 'approved',  payment_status: 'belum_bayar', payment_method: '',              payment_transaction_id: '' },
+    { id: 'BK-004', user_id: uid['user@test.com'], car_id: cid['Toyota Innova Reborn'], start_date: '2026-06-01', end_date: '2026-06-04', days: 3, pickup_location: 'Kantor Pusat – Jl. Admin No.1, Jakarta',           with_driver: 0, total_cost: 1350000,  notes: 'Perjalanan wisata ke Bogor.',  status: 'pending',   payment_status: 'belum_bayar', payment_method: '',              payment_transaction_id: '' },
+    { id: 'BK-005', user_id: uid['sari@test.com'], car_id: cid['Honda Brio Satya'],     start_date: '2026-04-15', end_date: '2026-04-17', days: 2, pickup_location: 'Antar ke Alamat – Jl. Sudirman No.5, Surabaya',  with_driver: 0, total_cost: 400000,   notes: '',                              status: 'completed', payment_status: 'lunas',   payment_method: 'GoPay',         payment_transaction_id: 'TRX-RM-SEED-005' },
+    { id: 'BK-006', user_id: uid['rina@test.com'], car_id: cid['Toyota Alphard'],       start_date: '2026-06-10', end_date: '2026-06-11', days: 1, pickup_location: 'Antar ke Alamat – Jl. Gatot Subroto No.88, Jakarta',with_driver: 1,total_cost: 1500000, notes: 'VIP untuk tamu undangan.',     status: 'pending',   payment_status: 'belum_bayar', payment_method: '',              payment_transaction_id: '' },
   ];
 
   for (const b of BOOKINGS) {
     await conn.query(
-      `INSERT INTO bookings (id, user_id, car_id, start_date, end_date, days, pickup_location,
-        with_driver, total_cost, notes, status, payment_status, payment_method, payment_transaction_id)
+      `INSERT INTO peminjaman (id, pengguna_id, mobil_id, tanggal_mulai, tanggal_kembali, durasi_hari, lokasi_penjemputan,
+        dengan_sopir, total_biaya, catatan, status, status_pembayaran, metode_pembayaran, transaksi_pembayaran_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [b.id, b.user_id, b.car_id, b.start_date, b.end_date, b.days, b.pickup_location,
        b.with_driver, b.total_cost, b.notes, b.status, b.payment_status, b.payment_method, b.payment_transaction_id]

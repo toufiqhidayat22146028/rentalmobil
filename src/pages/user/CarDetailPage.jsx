@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Users, Settings, Fuel, Star, CheckCircle, XCircle,
-  Car, Calendar, UserCheck, ChevronRight, Shield, MapPin
+  Car, Calendar, UserCheck, ChevronRight, Shield, MapPin, Loader2
 } from 'lucide-react';
-import { MOCK_CARS } from '../../data/mockCars';
+import { carsAPI } from '../../services/api';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { calculateDays, getTodayString, getMinReturnDate } from '../../utils/dateHelper';
 import { useAuth } from '../../context/AuthContext';
@@ -14,11 +14,40 @@ const CarDetailPage = () => {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
 
-  const car = MOCK_CARS.find((c) => c.id === Number(id));
+  const [car, setCar] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [withDriver, setWithDriver] = useState(false);
+
+  useEffect(() => {
+    const fetchCarDetail = async () => {
+      setIsLoading(true);
+      try {
+        const res = await carsAPI.getById(id);
+        if (res.data.success) {
+          setCar(res.data.data);
+        }
+      } catch (err) {
+        console.error('[CarDetail] Gagal memuat detail mobil:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCarDetail();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <span className="text-gray-500 font-medium">Memuat detail kendaraan...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!car) {
     return (
@@ -69,7 +98,7 @@ const CarDetailPage = () => {
           {/* Gambar */}
           <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-card">
             <img
-              src={car.image}
+              src={car.image || undefined}
               alt={car.name}
               className="w-full h-full object-cover"
               onError={(e) => { e.target.style.display = 'none'; }}
@@ -81,15 +110,26 @@ const CarDetailPage = () => {
             <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="badge-success text-xs">{car.type}</span>
+                  <span className="bg-slate-900 text-white text-xs font-semibold px-2.5 py-1 rounded-full">{car.type}</span>
                   <span className="text-xs text-gray-400">{car.brand} • {car.year}</span>
                 </div>
                 <h1 className="text-2xl font-display font-bold text-gray-800">{car.name}</h1>
               </div>
-              {car.available
-                ? <span className="flex items-center gap-1.5 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full"><CheckCircle className="w-4 h-4" /> Tersedia</span>
-                : <span className="flex items-center gap-1.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full"><XCircle className="w-4 h-4" /> Tidak Tersedia</span>
-              }
+              <div className="flex items-center">
+                {car.isMaintenance ? (
+                  <span className="flex items-center gap-1.5 bg-amber-100 text-amber-700 text-sm font-semibold px-3 py-1.5 rounded-full border border-amber-200">
+                    <CheckCircle className="w-4 h-4" /> Sedang Perbaikan
+                  </span>
+                ) : car.available ? (
+                  <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-sm font-semibold px-3 py-1.5 rounded-full border border-emerald-200">
+                    <CheckCircle className="w-4 h-4" /> Tersedia
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 bg-red-50 text-red-700 text-sm font-semibold px-3 py-1.5 rounded-full border border-red-200">
+                    <XCircle className="w-4 h-4" /> Tidak Tersedia
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Rating */}
@@ -109,12 +149,12 @@ const CarDetailPage = () => {
                 { icon: Users, label: `${car.capacity} Penumpang` },
                 { icon: Settings, label: car.transmission },
                 { icon: Fuel, label: car.fuel },
-                { icon: Car, label: car.specs.engine },
+                { icon: Car, label: car.specs?.engine || 'Mesin' },
                 { icon: Shield, label: 'Diasuransikan' },
                 { icon: MapPin, label: 'Antar-Jemput' },
-              ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col items-center gap-1 bg-gray-50 rounded-xl p-3 text-center">
-                  <Icon className="w-5 h-5 text-primary-700" />
+              ].map(({ icon: Icon, label }, idx) => (
+                <div key={`${label}-${idx}`} className="flex flex-col items-center gap-1 bg-gray-50 rounded-xl p-3 text-center">
+                  <Icon className="w-5 h-5 text-blue-600" />
                   <span className="text-xs text-gray-600 leading-tight">{label}</span>
                 </div>
               ))}
@@ -144,8 +184,8 @@ const CarDetailPage = () => {
           <div className="card p-6">
             <h3 className="font-semibold text-gray-800 mb-4">Spesifikasi Teknis</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Object.entries(car.specs).map(([k, v]) => (
-                <div key={k} className="bg-gray-50 rounded-xl p-3">
+              {car.specs && Object.entries(car.specs).map(([k, v], idx) => (
+                <div key={`${k}-${idx}`} className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-400 capitalize">{k}</p>
                   <p className="text-sm font-semibold text-gray-700">{v}</p>
                 </div>
@@ -242,10 +282,10 @@ const CarDetailPage = () => {
             {/* Tombol Pesan */}
             <button
               onClick={handleBooking}
-              disabled={!car.available || !startDate || !endDate}
+              disabled={car.isMaintenance || !car.available || !startDate || !endDate}
               className="btn-primary w-full justify-center disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              {!car.available ? 'Tidak Tersedia' : !isLoggedIn ? 'Masuk untuk Memesan' : 'Pesan Sekarang'}
+              {car.isMaintenance ? 'Dalam Perbaikan' : !car.available ? 'Tidak Tersedia' : !isLoggedIn ? 'Masuk untuk Memesan' : 'Pesan Sekarang'}
             </button>
             {!isLoggedIn && (
               <p className="text-xs text-center text-gray-400 mt-2">

@@ -17,12 +17,9 @@ const Footer = () => {
           {/* Kolom 1: Branding & Deskripsi */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2.5 mb-4 w-fit">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
-                <Car className="w-5 h-5 text-white" />
+              <div className="w-64 h-24 bg-white/5 rounded-xl flex items-center justify-start p-2">
+                <img src="/logo-light.svg?v=3" alt="Logo" className="w-full h-full object-contain object-left" onError={(e) => { e.target.style.display = 'none'; }} />
               </div>
-              <span className="font-display font-bold text-xl">
-                Rental<span className="text-primary-300">Mobil</span>
-              </span>
             </Link>
             <p className="text-primary-200 text-sm leading-relaxed max-w-xs">
               Solusi terpercaya untuk kebutuhan transportasi Anda. 
@@ -80,7 +77,7 @@ const Footer = () => {
             <ul className="space-y-3">
               {[
                 { icon: Phone, text: '0812-3456-7890' },
-                { icon: Mail, text: 'info@rentalmobil.com' },
+                { icon: Mail, text: 'info@subulussalam.com' },
                 { icon: MapPin, text: 'Jl. Contoh No.1, Kota Anda' },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-start gap-3">
@@ -97,7 +94,7 @@ const Footer = () => {
       <div className="border-t border-primary-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-primary-400 text-xs">
-            © {currentYear} RentalMobil. Hak Cipta Dilindungi.
+            © {currentYear} Subulussalam Rent Car. Hak Cipta Dilindungi.
           </p>
           <p className="text-primary-400 text-xs">
             Dibuat dengan ❤️ menggunakan React JS & Tailwind CSS

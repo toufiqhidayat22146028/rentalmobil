@@ -8,6 +8,24 @@ const jwt    = require('jsonwebtoken');
 const pool   = require('../db/database');
 const { authenticate } = require('../middleware/auth');
 
+const mapUser = (row) => {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.nama,
+    email: row.email,
+    password: row.kata_sandi,
+    phone: row.telepon,
+    address: row.alamat,
+    sim: row.sim,
+    ktp: row.ktp,
+    avatar: row.avatar,
+    role: row.peran,
+    status: row.status === 'aktif' ? 'active' : 'blocked',
+    createdAt: row.dibuat_pada,
+  };
+};
+
 const createToken = (user) =>
   jwt.sign(
     { id: user.id, email: user.email, role: user.role, name: user.name },
@@ -24,7 +42,8 @@ router.post('/login', async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ success: false, message: 'Email dan password wajib diisi.' });
 
-    const [[user]] = await pool.query('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
+    const [[row]] = await pool.query('SELECT * FROM pengguna WHERE email = ?', [email.toLowerCase().trim()]);
+    const user = mapUser(row);
     if (!user)
       return res.status(401).json({ success: false, message: 'Email atau password salah.' });
     if (user.status === 'blocked')
@@ -50,7 +69,7 @@ router.post('/register', async (req, res) => {
     if (password.length < 6)
       return res.status(400).json({ success: false, message: 'Password minimal 6 karakter.' });
 
-    const [[exists]] = await pool.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase().trim()]);
+    const [[exists]] = await pool.query('SELECT id FROM pengguna WHERE email = ?', [email.toLowerCase().trim()]);
     if (exists)
       return res.status(409).json({ success: false, message: 'Email sudah terdaftar.' });
 
@@ -59,11 +78,12 @@ router.post('/register', async (req, res) => {
     const avatar   = (nameParts[0]?.[0] || '').toUpperCase() + (nameParts[1]?.[0] || '').toUpperCase();
 
     const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, phone, avatar, role, status) VALUES (?, ?, ?, ?, ?, "user", "active")',
+      'INSERT INTO pengguna (nama, email, kata_sandi, telepon, avatar, peran, status) VALUES (?, ?, ?, ?, ?, "user", "aktif")',
       [name.trim(), email.toLowerCase().trim(), hashed, phone, avatar]
     );
 
-    const [[newUser]] = await pool.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+    const [[newRow]] = await pool.query('SELECT * FROM pengguna WHERE id = ?', [result.insertId]);
+    const newUser = mapUser(newRow);
     const token = createToken(newUser);
     res.status(201).json({ success: true, token, user: formatUser(newUser) });
   } catch (err) {
@@ -74,7 +94,8 @@ router.post('/register', async (req, res) => {
 // ── GET /api/auth/me ──────────────────────────────────────
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const [[user]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    const [[row]] = await pool.query('SELECT * FROM pengguna WHERE id = ?', [req.user.id]);
+    const user = mapUser(row);
     if (!user) return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
     res.json({ success: true, user: formatUser(user) });
   } catch (err) {
@@ -89,10 +110,11 @@ router.put('/profile', authenticate, async (req, res) => {
     if (!name?.trim())
       return res.status(400).json({ success: false, message: 'Nama tidak boleh kosong.' });
 
-    await pool.query('UPDATE users SET name = ?, phone = ?, address = ? WHERE id = ?',
+    await pool.query('UPDATE pengguna SET nama = ?, telepon = ?, alamat = ? WHERE id = ?',
       [name.trim(), phone || '', address || '', req.user.id]);
 
-    const [[updated]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    const [[updatedRow]] = await pool.query('SELECT * FROM pengguna WHERE id = ?', [req.user.id]);
+    const updated = mapUser(updatedRow);
     res.json({ success: true, user: formatUser(updated), message: 'Profil berhasil diperbarui.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -107,7 +129,7 @@ router.put('/password', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password baru minimal 6 karakter.' });
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashed, req.user.id]);
+    await pool.query('UPDATE pengguna SET kata_sandi = ? WHERE id = ?', [hashed, req.user.id]);
     res.json({ success: true, message: 'Password berhasil diubah.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

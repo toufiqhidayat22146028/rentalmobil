@@ -110,6 +110,10 @@ export const carsAPI = {
   toggleAvailability: (id) =>
     axiosInstance.patch(`/cars/${id}/toggle`),
 
+  /** Toggle maintenance (admin): PATCH /cars/:id/maintenance */
+  toggleMaintenance: (id, isMaintenance) => 
+    axiosInstance.patch(`/cars/${id}/maintenance`, { isMaintenance }),
+
   /** Get meta options (types & brands): GET /cars/meta/options */
   getMetaOptions: () =>
     axiosInstance.get('/cars/meta/options'),
@@ -178,6 +182,70 @@ export const paymentsAPI = {
     axiosInstance.get('/payments/methods'),
 };
 
+// ============================================================
+// CHAT API
+// ============================================================
+export const chatAPI = {
+  /** Create or get conversation: POST /chat */
+  createConversation: (data = {}) =>
+    axiosInstance.post('/chat', data),
+
+  /** Get user chat history: GET /chat/history */
+  getHistory: () =>
+    axiosInstance.get('/chat/history'),
+
+  /** Get messages: GET /chat/:id/messages */
+  getMessages: (conversationId) =>
+    axiosInstance.get(`/chat/${conversationId}/messages`),
+
+  /** Send message: POST /chat/:id/messages */
+  sendMessage: (conversationId, content, senderRole = 'user') =>
+    axiosInstance.post(`/chat/${conversationId}/messages`, { content, senderRole }),
+
+  /** Get all conversations (admin): GET /chat/conversations */
+  getConversations: () =>
+    axiosInstance.get('/chat/conversations'),
+
+  /** Mark as read (admin): PATCH /chat/:id/read */
+  markAsRead: (conversationId) =>
+    axiosInstance.patch(`/chat/${conversationId}/read`),
+
+  /** Close conversation: PATCH /chat/:id/close */
+  closeConversation: (conversationId) =>
+    axiosInstance.patch(`/chat/${conversationId}/close`),
+    
+  /** Delete conversation (admin): DELETE /chat/:id */
+  deleteConversation: (conversationId) =>
+    axiosInstance.delete(`/chat/${conversationId}`),
+
+  /** Reopen conversation (admin): PATCH /chat/:id/reopen */
+  reopenConversation: (conversationId) =>
+    axiosInstance.patch(`/chat/${conversationId}/reopen`),
+};
+
+// ============================================================
+// UPLOAD API
+// ============================================================
+export const uploadAPI = {
+  /** Upload image: POST /upload */
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return axiosInstance.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+};
+
+// ============================================================
+// REPORTS API
+// ============================================================
+export const reportsAPI = {
+  /** Get reports: GET /reports?period=harian|mingguan|bulanan */
+  getReports: (period = 'bulanan') =>
+    axiosInstance.get(`/reports?period=${period}`),
+};
+
 // Default export
 export default {
   auth:     authAPI,
@@ -185,5 +253,8 @@ export default {
   bookings: bookingsAPI,
   users:    usersAPI,
   payments: paymentsAPI,
+  chat:     chatAPI,
+  reports:  reportsAPI,
+  upload:   uploadAPI,
   getErrorMessage,
 };

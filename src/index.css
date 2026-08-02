@@ -11,9 +11,9 @@
    CSS CUSTOM PROPERTIES (VARIABEL GLOBAL)
    ========================================== */
 :root {
-  --color-primary: #166534;       /* Hijau Gelap Utama */
-  --color-primary-hover: #15803d; /* Hijau Gelap Hover */
-  --color-primary-light: #dcfce7; /* Hijau Muda */
+  --color-primary: #0f172a;       /* Slate Utama */
+  --color-primary-hover: #2563eb; /* Royal Blue Hover */
+  --color-primary-light: #f1f5f9; /* Slate 100 */
   --color-white: #ffffff;
   --color-gray-soft: #f8fafc;
   --transition-base: all 0.2s ease-in-out;
@@ -127,15 +127,15 @@
    UTILITIES TAMBAHAN
    ========================================== */
 @layer utilities {
-  /* Gradient teks hijau gelap */
-  .text-gradient-green {
-    @apply bg-gradient-to-r from-primary-700 to-primary-500 
+  /* Gradient teks premium */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary-800 to-primary-500 
            bg-clip-text text-transparent;
   }
 
   /* Gradient background untuk hero section */
   .bg-hero-gradient {
-    background: linear-gradient(135deg, #052e16 0%, #166534 50%, #15803d 100%);
+    background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%);
   }
 
   /* Animasi delay untuk typing indicator chatbot */
@@ -162,6 +162,6 @@
   }
 
   .chat-scroll::-webkit-scrollbar-thumb:hover {
-    background: #166534;
+    background: #2563eb;
   }
 }

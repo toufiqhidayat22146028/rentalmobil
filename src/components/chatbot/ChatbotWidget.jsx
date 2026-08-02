@@ -1,217 +1,443 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
   X, 
   Send, 
   Minimize2,
   Bot,
-  RotateCcw
+  RotateCcw,
+  LogIn
 } from 'lucide-react';
 import ChatMessage, { TypingIndicator } from './ChatMessage';
-import { WELCOME_MESSAGE, QUICK_REPLIES, getBotResponse } from '../../data/chatbotFAQ';
+import {
+  WELCOME_MESSAGE,
+  ADMIN_CONTACT,
+  getLocalBotResponse,
+  updateFAQData
+} from '../../data/chatbotFAQ';
+import { useAuth } from '../../context/AuthContext';
+import { chatAPI, carsAPI } from '../../services/api';
 
-// ============================================================
-// KOMPONEN UTAMA: ChatbotWidget
-// Widget chatbot yang mengambang di pojok kanan bawah layar.
-//
-// ARSITEKTUR STATE:
-//   - isOpen: boolean - apakah jendela chat terbuka
-//   - messages: array - riwayat seluruh pesan dalam satu sesi
-//   - inputText: string - teks yang sedang diketik user
-//   - isTyping: boolean - apakah bot sedang "mengetik" (loading)
-//   - hasNewMessage: boolean - indikator notifikasi pesan baru
-// ============================================================
 const ChatbotWidget = () => {
-  // State: apakah panel chat terbuka atau tertutup
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
   const [isOpen, setIsOpen] = useState(false);
-  
-  // State: array riwayat pesan. Diinisialisasi dengan pesan sambutan.
-  // Setiap pesan adalah objek: { id, role, content, timestamp }
-  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
-  
-  // State: teks yang sedang diketik pengguna di input field
+  const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  
-  // State: apakah bot sedang "memproses" pesan (tampilkan typing indicator)
   const [isTyping, setIsTyping] = useState(false);
-  
-  // State: apakah quick replies masih perlu ditampilkan
-  // Disembunyikan setelah user mengirim pesan pertama
-  const [showQuickReplies, setShowQuickReplies] = useState(true);
-  
-  // State: notifikasi titik merah pada tombol chatbot
-  const [hasNotification, setHasNotification] = useState(true);
+  const [isConversationLoading, setIsConversationLoading] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
+  const [isBackendAvailable, setIsBackendAvailable] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [hasNotification, setHasNotification] = useState(false);
 
-  // REF: Referensi ke elemen bawah daftar pesan
-  // Digunakan untuk auto-scroll ke pesan terbaru
   const messagesEndRef = useRef(null);
-  
-  // REF: Referensi ke input field untuk auto-focus
   const inputRef = useRef(null);
 
-  // ============================================================
-  // EFEK: Auto-scroll ke bawah setiap kali ada pesan baru
-  // atau saat bot sedang mengetik
-  // ============================================================
+  // Fetch dynamic cars on mount for guest users
   useEffect(() => {
-    // Scroll halus ke elemen paling bawah (messagesEndRef)
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]); // Dipicu setiap kali messages atau isTyping berubah
+    carsAPI.getAll()
+      .then(res => {
+        if (res.data.success && res.data.data) {
+          updateFAQData(res.data.data);
+        }
+      })
+      .catch(err => console.error('[Chatbot] Failed to fetch cars:', err));
+  }, []);
 
-  // ============================================================
-  // EFEK: Auto-focus input saat chat dibuka
-  // ============================================================
+  // Auto scroll ke bawah
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (isOpen || messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages, isTyping, isOpen]);
+
+  // Focus input saat chat dibuka
   useEffect(() => {
     if (isOpen) {
-      // Sedikit delay agar animasi pembukaan selesai dulu
       setTimeout(() => inputRef.current?.focus(), 300);
-      // Hapus notifikasi saat chat dibuka
       setHasNotification(false);
     }
   }, [isOpen]);
 
-  // ============================================================
-  // FUNGSI: Membuat objek pesan baru
-  // Menghasilkan ID unik berdasarkan timestamp + random number
-  // ============================================================
-  const createMessage = (role, content) => ({
-    id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    role,        // 'user' atau 'bot'
-    content,     // Isi teks pesan
-    timestamp: new Date().toISOString(), // Waktu pesan dibuat
-  });
+  // 1. Inisialisasi Percakapan (Buat atau ambil yang aktif)
+  const fetchConversationMessages = useCallback(async (convId) => {
+    try {
+      const res = await chatAPI.getMessages(convId);
+      if (res.data.success) {
+        const msgs = res.data.data || [];
+        if (msgs.length > 0) {
+          const processedMsgs = msgs.map((msg, i) => {
+             if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
+                 return { ...msg, suggestions: MAIN_MENU_REPLIES };
+             }
+             return msg;
+          });
+          setMessages(processedMsgs);
+        }
+      }
+    } catch (err) {
+      console.error('[Chatbot] Gagal mengambil pesan percakapan:', err);
+    }
+  }, []);
 
-  // ============================================================
-  // FUNGSI UTAMA: Mengirim pesan pengguna dan mendapat respons bot
-  // ============================================================
-  const handleSendMessage = async (text = inputText) => {
-    // Validasi: jangan kirim jika teks kosong atau bot sedang mengetik
-    const trimmedText = text.trim();
-    if (!trimmedText || isTyping) return;
+  const initConversation = useCallback(async () => {
+    if (!user) {
+      setIsBackendAvailable(false);
+      return null;
+    }
+    setIsConversationLoading(true);
 
-    // 1. Sembunyikan quick replies setelah pesan pertama terkirim
-    setShowQuickReplies(false);
+    try {
+      const res = await chatAPI.createConversation();
+      if (res.data.success) {
+        const conv = res.data.data;
+        const msgs = conv.messages && conv.messages.length > 0 ? conv.messages : [WELCOME_MESSAGE];
+        const processedMsgs = msgs.map((msg, i) => {
+             if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
+                 return { ...msg, suggestions: MAIN_MENU_REPLIES };
+             }
+             return msg;
+        });
+        setMessages(processedMsgs);
+        setConversationId(conv.id);
+        setErrorMessage('');
+        setIsBackendAvailable(true);
+        return conv.id;
+      }
+    } catch (err) {
+      console.error('[Chatbot] Gagal inisialisasi percakapan, beralih ke mode lokal.');
+      setIsBackendAvailable(false);
+    } finally {
+      setIsConversationLoading(false);
+    }
+    return null;
+  }, [user]);
 
-    // 2. Tambahkan pesan pengguna ke riwayat chat
-    const userMessage = createMessage('user', trimmedText);
-    setMessages((prev) => [...prev, userMessage]);
+  useEffect(() => {
+    if (!user) {
+      setConversationId(null);
+      setMessages([]);
+      setErrorMessage('');
+      setIsBackendAvailable(true);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!isOpen || !isBackendAvailable) return;
+    if (!conversationId && !isConversationLoading) {
+      initConversation();
+      return;
+    }
+
+    if (!conversationId) return;
+    fetchConversationMessages(conversationId);
+    const interval = setInterval(async () => {
+      try {
+        const res = await chatAPI.getMessages(conversationId);
+        if (res.data.success) {
+          const backendMessages = res.data.data;
+          if (backendMessages.length > messages.length) {
+            setMessages(backendMessages);
+            if (!isOpen) {
+              setHasNotification(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Chatbot] Polling pesan gagal:', err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, conversationId, fetchConversationMessages, isBackendAvailable, messages.length]);
+
+  // Command handlers
+  const handleNewChat = async () => {
+    if (!user) {
+      setMessages([WELCOME_MESSAGE]);
+      setConversationId(null);
+      return;
+    }
     
-    // 3. Kosongkan input field
-    setInputText('');
-
-    // 4. Aktifkan animasi "bot sedang mengetik"
-    setIsTyping(true);
-
-    // 5. Simulasi delay respons bot (0.8 - 1.5 detik)
-    //    Ini membuat chatbot terasa lebih natural dan tidak instant
-    const delay = Math.random() * 700 + 800; // Angka acak antara 800ms - 1500ms
-    
-    await new Promise((resolve) => setTimeout(resolve, delay));
-
-    // 6. Dapatkan respons bot berdasarkan kata kunci
-    const botAnswer = getBotResponse(trimmedText);
-    
-    // 7. Matikan typing indicator
-    setIsTyping(false);
-    
-    // 8. Tambahkan respons bot ke riwayat chat
-    const botMessage = createMessage('bot', botAnswer);
-    setMessages((prev) => [...prev, botMessage]);
+    setIsConversationLoading(true);
+    setErrorMessage('');
+    try {
+      if (conversationId) {
+        await chatAPI.closeConversation(conversationId);
+      }
+      const res = await chatAPI.createConversation({ forceNew: true });
+      if (res.data.success) {
+        const conv = res.data.data;
+        setConversationId(conv.id);
+        const msgs = conv.messages && conv.messages.length > 0 ? conv.messages : [WELCOME_MESSAGE];
+        const processedMsgs = msgs.map((msg, i) => {
+             if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
+                 return { ...msg, suggestions: MAIN_MENU_REPLIES };
+             }
+             return msg;
+        });
+        setMessages(processedMsgs);
+        setIsBackendAvailable(true);
+      }
+    } catch (err) {
+      console.error('[Chatbot] Gagal membuat obrolan baru:', err);
+      setMessages([WELCOME_MESSAGE]);
+      setConversationId(null);
+      setIsBackendAvailable(false);
+    } finally {
+      setIsConversationLoading(false);
+    }
   };
 
-  // ============================================================
-  // FUNGSI: Handle tombol Enter untuk mengirim pesan
-  // ============================================================
+  const handleShowHistory = async () => {
+    if (!user) {
+      setMessages(prev => [...prev, {
+        id: `bot-err-${Date.now()}`,
+        role: 'bot',
+        content: 'Maaf, fitur Riwayat Chat hanya tersedia jika Anda sudah login.',
+        timestamp: new Date().toISOString(),
+      }]);
+      return;
+    }
+
+    try {
+      const res = await chatAPI.getHistory();
+      if (res.data.success) {
+        const history = res.data.data;
+        if (history.length === 0) {
+          setMessages(prev => [...prev, {
+            id: `bot-hist-${Date.now()}`,
+            role: 'bot',
+            content: 'Belum ada riwayat percakapan sebelumnya.',
+            timestamp: new Date().toISOString(),
+          }]);
+          return;
+        }
+
+        const historyLines = history.slice(0, 5).map((h, i) => 
+          `• Obrolan ${i+1} (${new Date(h.createdAt).toLocaleDateString()}) - ${h.last_message ? h.last_message.substring(0,20)+'...' : 'Obrolan kosong'}`
+        );
+
+        setMessages(prev => [...prev, {
+          id: `bot-hist-${Date.now()}`,
+          role: 'bot',
+          content: `🕘 **Riwayat Chat**\n\nBerikut riwayat percakapan Anda:\n\n${historyLines.join('\n')}\n\nFitur untuk membuka ulang sesi sebelumnya masih dalam pengembangan.`,
+          timestamp: new Date().toISOString(),
+        }]);
+      }
+    } catch (err) {
+      console.error('[Chatbot] Gagal memuat riwayat:', err);
+      setMessages(prev => [...prev, {
+        id: `bot-err-${Date.now()}`,
+        role: 'bot',
+        content: 'Maaf, gagal memuat riwayat obrolan dari server.',
+        timestamp: new Date().toISOString(),
+      }]);
+    }
+  };
+
+  // Kirim pesan user
+  const handleSendMessage = async (text = inputText, nextKey = null) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      setErrorMessage('Silakan ketik pesan terlebih dahulu.');
+      return;
+    }
+
+    if (nextKey === 'newChat' || trimmed === 'Buat Obrolan Baru') {
+      handleNewChat();
+      return;
+    }
+
+    if (nextKey === 'history' || trimmed === 'Riwayat Chat') {
+      handleShowHistory();
+      return;
+    }
+
+    setErrorMessage('');
+    setInputText('');
+
+    const userTempMsg = {
+      id: `temp-${Date.now()}`,
+      role: 'user',
+      content: trimmed,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userTempMsg]);
+    setIsTyping(true);
+
+    const sendLocalResponse = () => {
+      const response = getLocalBotResponse(nextKey || detectNextReplySet(trimmed), trimmed);
+      const botTempMsg = {
+        id: `bot-${Date.now()}`,
+        role: 'bot',
+        content: response.content,
+        suggestions: response.suggestions || [],
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, botTempMsg]);
+    };
+
+    try {
+      if (!isBackendAvailable) {
+        throw new Error('Backend offline');
+      }
+
+      let convId = conversationId;
+      if (!convId) {
+        convId = await initConversation();
+        if (!convId) {
+          throw new Error('Conversation initialization failed');
+        }
+        setConversationId(convId);
+      }
+
+      const res = await chatAPI.sendMessage(convId, trimmed, 'user');
+      setIsBackendAvailable(true);
+
+      if (res.data.success) {
+        const returnedMessages = res.data.data || [];
+        const botMessages = returnedMessages.filter((msg) => msg.role === 'bot');
+
+        if (botMessages.length > 0) {
+          const localMatch = getLocalBotResponse(nextKey || detectNextReplySet(trimmed), trimmed);
+          const messagesWithSuggestions = botMessages.map(msg => ({
+            ...msg,
+            suggestions: msg.suggestions || localMatch.suggestions || [],
+          }));
+          setMessages((prev) => [...prev, ...messagesWithSuggestions]);
+        }
+        return; // Message successfully sent to backend, admin might reply later
+      }
+
+      throw new Error('Gagal mengirim pesan ke server');
+    } catch (err) {
+      // Gunakan respons lokal secara diam-diam tanpa memunculkan pesan error di UI
+      sendLocalResponse();
+      setIsBackendAvailable(false);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   const handleKeyDown = (e) => {
-    // Kirim pesan saat Enter ditekan (bukan Shift+Enter)
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Mencegah newline pada textarea
+      e.preventDefault();
       handleSendMessage();
     }
   };
 
-  // ============================================================
-  // FUNGSI: Reset/mulai ulang percakapan
-  // ============================================================
-  const handleReset = () => {
-    // Kembalikan pesan ke hanya pesan sambutan awal
-    setMessages([WELCOME_MESSAGE]);
-    setInputText('');
-    setIsTyping(false);
-    setShowQuickReplies(true); // Tampilkan kembali quick replies
+  // Reset Percakapan
+  const closeCurrentSession = useCallback(async () => {
+    if (!conversationId) {
+      setMessages([]);
+      setConversationId(null);
+      setErrorMessage('');
+      return;
+    }
+
+    try {
+      await chatAPI.closeConversation(conversationId);
+    } catch (err) {
+      console.error('[Chatbot] Gagal menutup session:', err);
+    } finally {
+      setMessages([]);
+      setConversationId(null);
+      setErrorMessage('');
+      setIsBackendAvailable(true);
+    }
+  }, [conversationId]);
+
+  const handleReset = async () => {
+    if (!window.confirm('Mulai obrolan baru? Riwayat obrolan Anda sebelumnya akan direset.')) return;
+    await closeCurrentSession();
+    await initConversation();
   };
 
-  // ============================================================
-  // FUNGSI: Handle klik quick reply button
-  // ============================================================
-  const handleQuickReply = (message) => {
-    handleSendMessage(message);
+  const handleCloseChat = async () => {
+    // Hanya tutup widget, jangan hapus sesi
+    setIsOpen(false);
   };
+
+  const detectNextReplySet = (text) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('lihat mobil') || lower.includes('mobil') || lower.includes('lihat semua mobil')) {
+      return 'cars';
+    }
+    if (lower.includes('harga') || lower.includes('sewa')) {
+      return 'price';
+    }
+    if (lower.includes('cara booking') || lower.includes('booking') || lower.includes('jadwal booking')) {
+      return 'booking';
+    }
+    if (lower.includes('syarat') || lower.includes('persyaratan')) {
+      return 'requirements';
+    }
+    if (lower.includes('pengembalian') || lower.includes('kembali') || lower.includes('late') || lower.includes('terlambat')) {
+      return 'return';
+    }
+    if (lower.includes('lokasi') || lower.includes('kontak') || lower.includes('alamat')) {
+      return 'location';
+    }
+    if (lower.includes('hubungi admin') || lower.includes('chat admin') || lower.includes('telepon admin') || lower.includes('admin')) {
+      return 'admin';
+    }
+    if (lower.includes('booking sekarang') || lower.includes('lanjutkan booking') || lower.includes('pesan')) {
+      return 'postBooking';
+    }
+    if (lower.includes('terima kasih') || lower.includes('berhasil') || lower.includes('konfirmasi')) {
+      return 'confirmation';
+    }
+    if (lower.includes('menu utama') || lower.includes('utama')) {
+      return 'main';
+    }
+    return 'main';
+  };
+
+  const displayedMessages = messages.length > 0 ? messages : [WELCOME_MESSAGE];
 
   return (
-    // ============================================================
-    // CONTAINER UTAMA - Fixed di pojok kanan bawah layar
-    // z-50 memastikan widget selalu di atas elemen lain
-    // ============================================================
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-
-      {/* ================================================
-          PANEL CHAT - Muncul saat isOpen = true
-          Menggunakan conditional rendering + animasi CSS
-          ================================================ */}
+      {/* PANEL CHAT */}
       {isOpen && (
-        <div className="
-          w-[360px] sm:w-[380px] 
-          bg-white rounded-2xl 
-          shadow-chatbot 
-          border border-gray-100
-          flex flex-col overflow-hidden
-          animate-slide-up
-          max-h-[540px]
-        ">
-          {/* ============================================
-              HEADER CHAT - Baris atas dengan judul & tombol
-              ============================================ */}
-          <div className="
-            flex items-center justify-between 
-            px-4 py-3
-            bg-gradient-to-r from-primary-900 to-primary-700
-          ">
-            {/* Info bot */}
+        <div className="w-[360px] sm:w-[380px] bg-white rounded-2xl shadow-chatbot border border-gray-100 flex flex-col overflow-hidden animate-slide-up max-h-[540px]">
+          {/* HEADER CHAT */}
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-900 to-slate-800">
             <div className="flex items-center gap-3">
-              {/* Avatar bot dengan indikator online */}
               <div className="relative">
                 <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
-                {/* Titik hijau indikator online */}
-                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-primary-800 rounded-full" />
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-slate-900 rounded-full" />
               </div>
               
-              {/* Nama & status bot */}
               <div>
-                <p className="text-white font-semibold text-sm leading-tight">
-                  AsistenBot
-                </p>
-                <p className="text-primary-200 text-xs">Online • Siap membantu</p>
+                <p className="text-white font-semibold text-sm leading-tight">AsistenBot</p>
+                <p className="text-slate-300 text-xs">Online • Siap membantu</p>
               </div>
             </div>
 
-            {/* Tombol kontrol: Reset & Tutup */}
             <div className="flex items-center gap-1">
-              {/* Tombol reset percakapan */}
-              <button
-                onClick={handleReset}
-                className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                title="Mulai percakapan baru"
-                aria-label="Reset percakapan"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
+              {user && (
+                <button
+                  onClick={handleReset}
+                  className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Mulai percakapan baru"
+                  aria-label="Reset percakapan"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
               
-              {/* Tombol minimize / tutup chat */}
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={handleCloseChat}
                 className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                 title="Tutup chat"
                 aria-label="Tutup chatbot"
@@ -221,159 +447,85 @@ const ChatbotWidget = () => {
             </div>
           </div>
 
-          {/* ============================================
-              AREA PESAN - Daftar gelembung pesan
-              overflow-y-auto: scroll vertikal jika pesan banyak
-              chat-scroll: custom scrollbar dari index.css
-              ============================================ */}
-          <div className="
-            flex-1 overflow-y-auto p-4 
-            flex flex-col gap-3
-            bg-gray-50
-            min-h-[300px] max-h-[340px]
-            chat-scroll
-          ">
-            {/* Render semua pesan satu per satu */}
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
-            ))}
-
-            {/* Tampilkan typing indicator saat bot sedang memproses */}
-            {isTyping && <TypingIndicator />}
-
-            {/* Elemen kosong di bawah sebagai target auto-scroll */}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* ============================================
-              QUICK REPLIES - Tombol cepat pertanyaan populer
-              Hanya tampil saat showQuickReplies = true
-              ============================================ */}
-          {showQuickReplies && (
-            <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
-              <p className="text-xs text-gray-400 mb-2 font-medium">Pertanyaan populer:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {QUICK_REPLIES.map((qr) => (
-                  <button
-                    key={qr.id}
-                    onClick={() => handleQuickReply(qr.message)}
-                    className="
-                      text-xs px-3 py-1.5 rounded-full 
-                      bg-white border border-primary-200 
-                      text-primary-700 font-medium
-                      hover:bg-primary-50 hover:border-primary-400
-                      transition-all duration-200
-                      active:scale-95
-                    "
-                  >
-                    {qr.label}
-                  </button>
+          {/* AREA PESAN */}
+          <>
+              {/* LIST GELEMBUNG PESAN */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-gray-50 min-h-[300px] max-h-[340px] chat-scroll">
+                {displayedMessages.map((message) => (
+                  <ChatMessage 
+                    key={message.id} 
+                    message={{
+                      ...message,
+                      // Map properti agar cocok dengan prop yang diterima ChatMessage
+                      role: message.role || message.senderRole || message.sender_role,
+                      timestamp: message.timestamp || message.createdAt || message.created_at
+                    }} 
+                    onSuggestionClick={(suggestion) => handleSendMessage(suggestion.message, suggestion.next)}
+                  />
                 ))}
+
+                {isTyping && <TypingIndicator />}
+                <div ref={messagesEndRef} />
               </div>
-            </div>
-          )}
 
-          {/* ============================================
-              INPUT AREA - Form pengiriman pesan
-              ============================================ */}
-          <div className="p-3 bg-white border-t border-gray-100">
-            <div className="flex items-end gap-2">
-              {/* 
-                Textarea (bukan input biasa) agar bisa multi-baris.
-                rows={1} agar awalnya hanya 1 baris.
-              */}
-              <textarea
-                ref={inputRef}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ketik pertanyaan Anda..."
-                rows={1}
-                disabled={isTyping} // Nonaktifkan saat bot sedang memproses
-                className="
-                  flex-1 resize-none rounded-xl 
-                  border border-gray-200 
-                  px-4 py-3 text-sm text-gray-700
-                  placeholder-gray-400
-                  focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-                  transition-all duration-200
-                  max-h-[100px] overflow-y-auto chat-scroll
-                  disabled:bg-gray-50 disabled:cursor-not-allowed
-                "
-                style={{ 
-                  // Auto-resize textarea berdasarkan konten
-                  height: 'auto' 
-                }}
-              />
+              {/* ERROR MESSAGE */}
+              {errorMessage && (
+                <div className="px-4 py-3 bg-rose-50 border border-rose-100 text-rose-700 text-sm rounded-2xl">
+                  {errorMessage}
+                </div>
+              )}
 
-              {/* Tombol Kirim */}
-              <button
-                onClick={() => handleSendMessage()}
-                disabled={!inputText.trim() || isTyping} // Nonaktif jika input kosong atau bot mengetik
-                className="
-                  w-11 h-11 flex-shrink-0
-                  bg-primary-800 hover:bg-primary-700
-                  disabled:bg-gray-200 disabled:cursor-not-allowed
-                  text-white rounded-xl
-                  flex items-center justify-center
-                  transition-all duration-200
-                  active:scale-90
-                "
-                aria-label="Kirim pesan"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {/* Petunjuk shortcut keyboard */}
-            <p className="text-[10px] text-gray-300 mt-1.5 text-center">
-              Tekan <kbd className="bg-gray-100 text-gray-400 px-1 rounded text-[10px]">Enter</kbd> untuk kirim
-            </p>
-          </div>
+
+              {/* INPUT AREA */}
+              <div className="p-3 bg-white border-t border-gray-100">
+                <div className="flex items-end gap-2">
+                  <textarea
+                    ref={inputRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ketik pertanyaan Anda..."
+                    rows={1}
+                    disabled={isTyping}
+                    className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 transition-all max-h-[100px] overflow-y-auto chat-scroll disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  />
+
+                  <button
+                    onClick={() => handleSendMessage()}
+                    disabled={!inputText.trim() || isTyping}
+                    className="w-11 h-11 flex-shrink-0 bg-slate-900 hover:bg-slate-800 disabled:bg-gray-200 disabled:cursor-not-allowed text-white rounded-xl flex items-center justify-center transition-all active:scale-90 shadow-md shadow-slate-950/10"
+                    aria-label="Kirim pesan"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <p className="text-[10px] text-gray-400 mt-1.5 text-center">
+                  Tekan <kbd className="bg-gray-100 text-gray-400 px-1 rounded text-[10px]">Enter</kbd> untuk kirim
+                </p>
+              </div>
+            </>
         </div>
       )}
 
-      {/* ================================================
-          TOMBOL TOGGLE CHATBOT (FAB - Floating Action Button)
-          Ini adalah tombol bulat yang selalu terlihat di sudut kanan bawah.
-          Menggunakan animasi pulse-green untuk menarik perhatian.
-          ================================================ */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`
-          relative w-14 h-14 rounded-full
-          bg-primary-800 hover:bg-primary-700
-          text-white
-          flex items-center justify-center
-          shadow-chatbot
-          transition-all duration-300
-          hover:scale-110 active:scale-95
-          ${!isOpen ? 'animate-pulse-green' : ''}
-        `}
+        onClick={async () => {
+          if (isOpen) {
+            await handleCloseChat();
+            return;
+          }
+          setIsOpen(true);
+        }}
+        className={`relative w-14 h-14 rounded-full bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center shadow-chatbot transition-all duration-300 hover:scale-110 active:scale-95 ${!isOpen ? 'animate-pulse-blue' : ''}`}
         aria-label={isOpen ? 'Tutup chatbot' : 'Buka chatbot'}
         aria-expanded={isOpen}
       >
-        {/* Toggle ikon antara MessageCircle dan X */}
-        <div className={`transition-transform duration-300 ${isOpen ? 'rotate-0' : 'rotate-0'}`}>
-          {isOpen 
-            ? <X className="w-6 h-6" /> 
-            : <MessageCircle className="w-6 h-6" />
-          }
+        <div className="transition-transform duration-300">
+          {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
         </div>
 
-        {/* 
-          NOTIFIKASI (titik merah) 
-          Muncul saat hasNotification = true dan chat tertutup
-          Memberikan sinyal visual bahwa ada pesan baru
-        */}
         {hasNotification && !isOpen && (
-          <div className="
-            absolute -top-1 -right-1
-            w-4 h-4 bg-red-500 
-            rounded-full border-2 border-white
-            flex items-center justify-center
-            animate-bounce
-          ">
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center animate-bounce">
             <span className="text-white text-[8px] font-bold">1</span>
           </div>
         )}

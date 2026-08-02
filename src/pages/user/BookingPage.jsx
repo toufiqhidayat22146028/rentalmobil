@@ -108,8 +108,8 @@ const BookingPage = () => {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <div className="card p-10">
-          <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-5">
-            <CheckCircle className="w-12 h-12 text-primary-700" />
+          <div className="w-24 h-24 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-12 h-12 text-emerald-600 animate-pulse" />
           </div>
           <h2 className="text-2xl font-display font-bold text-gray-800 mb-2">Peminjaman & Pembayaran Berhasil!</h2>
           <div className="bg-gray-50 rounded-2xl p-4 text-left text-sm space-y-2 my-6">
@@ -157,7 +157,7 @@ const BookingPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-5">
               <div className="card p-5">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-primary-700" /> Jadwal</h3>
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-600" /> Jadwal</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">Tanggal Mulai *</label>
@@ -168,10 +168,10 @@ const BookingPage = () => {
                     <input type="date" min={startDate ? getMinReturnDate(startDate) : getTodayString()} value={endDate} onChange={e => setEndDate(e.target.value)} disabled={!startDate} className="form-input disabled:bg-gray-50" required />
                   </div>
                 </div>
-                {days > 0 && <div className="mt-3 text-sm text-primary-700 bg-primary-50 px-4 py-2.5 rounded-lg font-medium">✓ Durasi: {days} hari</div>}
+                {days > 0 && <div className="mt-3 text-sm text-blue-700 bg-blue-50/50 border border-blue-100 px-4 py-2.5 rounded-lg font-semibold">✓ Durasi: {days} hari</div>}
               </div>
               <div className="card p-5">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-primary-700" /> Lokasi</h3>
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-blue-600" /> Lokasi</h3>
                 {PICKUP_OPTIONS.map(opt => (
                   <label key={opt} className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all mb-2 ${pickupLocation === opt ? 'border-primary-800 bg-primary-50' : 'border-gray-200 hover:border-primary-300'}`}>
                     <input type="radio" name="pickup" value={opt} checked={pickupLocation === opt} onChange={e => setPickupLocation(e.target.value)} className="accent-primary-800 mt-0.5" />
@@ -180,7 +180,7 @@ const BookingPage = () => {
                 ))}
               </div>
               <div className="card p-5">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><UserCheck className="w-5 h-5 text-primary-700" /> Opsi Sopir</h3>
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><UserCheck className="w-5 h-5 text-blue-600" /> Opsi Sopir</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[false, true].map(opt => (
                     <button key={String(opt)} type="button" onClick={() => setWithDriver(opt)}
@@ -192,7 +192,7 @@ const BookingPage = () => {
                 </div>
               </div>
               <div className="card p-5">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-primary-700" /> Catatan</h3>
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-blue-600" /> Catatan</h3>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Contoh: butuh kursi bayi, dll." rows={3} className="form-input resize-none" />
               </div>
             </div>

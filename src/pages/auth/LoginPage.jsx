@@ -44,7 +44,7 @@ const LoginPage = () => {
           <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/30">
             <Car className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-3xl font-display font-bold text-white mb-3">RentalMobil</h2>
+          <h2 className="text-3xl font-display font-bold text-white mb-3 uppercase">Subulussalam Rent Car</h2>
           <p className="text-primary-200 text-lg leading-relaxed max-w-sm">
             Solusi terpercaya untuk kebutuhan transportasi Anda. Ribuan pelanggan sudah mempercayai kami.
           </p>
@@ -59,12 +59,10 @@ const LoginPage = () => {
       {/* Panel Kanan - Form */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          {/* Logo mobile */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="w-10 h-10 bg-primary-800 rounded-xl flex items-center justify-center">
-              <Car className="w-6 h-6 text-white" />
+            <div className="w-64 h-20 overflow-hidden flex items-center justify-center p-0.5">
+              <img src="/logo-light.svg?v=3" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
             </div>
-            <span className="font-display font-bold text-xl text-primary-800">RentalMobil</span>
           </div>
 
           <h1 className="text-2xl font-display font-bold text-gray-800 mb-1">Selamat Datang!</h1>
@@ -72,7 +70,7 @@ const LoginPage = () => {
 
           {/* Demo accounts */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
-            <p className="text-xs font-semibold text-amber-700 mb-2">🎯 Demo Akun:</p>
+            <p className="text-xs font-semibold text-amber-700 mb-2"></p>
             <div className="flex gap-2">
               <button onClick={() => fillDemo('user')} className="flex-1 text-xs bg-white border border-amber-300 text-amber-700 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-medium">👤 Login sebagai User</button>
               <button onClick={() => fillDemo('admin')} className="flex-1 text-xs bg-amber-500 text-white py-1.5 rounded-lg hover:bg-amber-600 transition-colors font-medium">🔑 Login sebagai Admin</button>

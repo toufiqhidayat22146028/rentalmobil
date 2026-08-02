@@ -1,7 +1,6 @@
 import { Calendar, Car, MapPin, Clock, CheckCircle, XCircle, AlertCircle, Loader } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDateShort } from '../../utils/dateHelper';
-import { MOCK_CARS } from '../../data/mockCars';
 
 // ============================================================
 // KOMPONEN: BookingCard
@@ -18,19 +17,18 @@ const STATUS_CONFIG = {
 };
 
 const BookingCard = ({ booking, onCancel, showActions = true }) => {
-  const car = MOCK_CARS.find((c) => c.id === booking.carId);
   const status = STATUS_CONFIG[booking.status] || STATUS_CONFIG.pending;
   const StatusIcon = status.icon;
 
-  if (!car) return null;
+  if (!booking) return null;
 
   return (
     <div className="card p-5 flex flex-col sm:flex-row gap-4">
       {/* Gambar Mobil kecil */}
       <div className="w-full sm:w-28 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
         <img
-          src={car.image}
-          alt={car.name}
+          src={booking.carImage || undefined}
+          alt={booking.carName}
           className="w-full h-full object-cover"
           onError={(e) => { e.target.style.display = 'none'; }}
         />
@@ -41,7 +39,7 @@ const BookingCard = ({ booking, onCancel, showActions = true }) => {
         <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
           <div>
             <p className="text-xs text-gray-400 font-mono">{booking.id}</p>
-            <h4 className="font-display font-bold text-gray-800">{car.name}</h4>
+            <h4 className="font-display font-bold text-gray-800">{booking.carName}</h4>
           </div>
           {/* Badge Status */}
           <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${status.color}`}>

@@ -56,10 +56,9 @@ const RegisterPage = () => {
       <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto">
         <div className="w-full max-w-md py-8">
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="w-10 h-10 bg-primary-800 rounded-xl flex items-center justify-center">
-              <Car className="w-6 h-6 text-white" />
+            <div className="w-64 h-20 overflow-hidden flex items-center justify-center p-0.5">
+              <img src="/logo-light.svg?v=3" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
             </div>
-            <span className="font-display font-bold text-xl text-primary-800">RentalMobil</span>
           </div>
 
           <h1 className="text-2xl font-display font-bold text-gray-800 mb-1">Buat Akun Baru</h1>

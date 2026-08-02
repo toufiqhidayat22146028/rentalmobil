@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, Loader2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, Loader2, X, Wrench } from 'lucide-react';
 import Modal from '../../components/common/Modal';
-import { carsAPI, getErrorMessage } from '../../services/api';
+import { carsAPI, uploadAPI, getErrorMessage } from '../../services/api';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const CAR_TYPES = ['MPV', 'SUV', 'City Car', 'Sedan', 'Luxury'];
@@ -13,6 +13,7 @@ const EMPTY_FORM = {
   transmission: 'Manual', fuel: 'Bensin', pricePerDay: '',
   driverCostPerDay: 150000, available: true, description: '',
   color: '', plateNumber: '', image: '', features: [], specs: {},
+  imageFile: null, imagePreview: '',
 };
 
 const ManageCarPage = () => {
@@ -25,6 +26,7 @@ const ManageCarPage = () => {
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
   const [featInput, setFeatInput]   = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const fetchCars = useCallback(async () => {
     setIsLoading(true);
@@ -53,6 +55,7 @@ const ManageCarPage = () => {
       available: car.available, description: car.description, color: car.color,
       plateNumber: car.plateNumber || car.plate_number, image: car.image,
       features: [...(car.features || [])], specs: { ...(car.specs || {}) },
+      imageFile: null, imagePreview: '',
     });
     setError('');
     setShowModal(true);
@@ -66,11 +69,26 @@ const ManageCarPage = () => {
     setSaving(true);
     setError('');
     try {
+      let finalImageUrl = form.image;
+      
+      // Upload image first if there is a new file
+      if (form.imageFile) {
+        setUploadingImage(true);
+        const { data } = await uploadAPI.uploadImage(form.imageFile);
+        if (data.success) {
+          finalImageUrl = data.url;
+        } else {
+          throw new Error('Gagal mengunggah gambar');
+        }
+      }
+
+      const payload = { ...form, image: finalImageUrl };
+
       let res;
       if (editCar) {
-        res = await carsAPI.update(editCar.id, form);
+        res = await carsAPI.update(editCar.id, payload);
       } else {
-        res = await carsAPI.create(form);
+        res = await carsAPI.create(payload);
       }
       if (res.data.success) {
         fetchCars();
@@ -78,7 +96,10 @@ const ManageCarPage = () => {
       }
     } catch (err) {
       setError(getErrorMessage(err));
-    } finally { setSaving(false); }
+    } finally { 
+      setSaving(false); 
+      setUploadingImage(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -102,6 +123,27 @@ const ManageCarPage = () => {
     }
   };
 
+  const handleMaintenanceToggle = async (car) => {
+    try {
+      const confirmMessage = car.isMaintenance 
+        ? 'Selesaikan perbaikan dan kembalikan status mobil?' 
+        : 'Tandai mobil ini dalam masa perbaikan? (Mobil tidak akan bisa disewa)';
+        
+      if (!window.confirm(confirmMessage)) return;
+
+      const { data } = await carsAPI.toggleMaintenance(car.id, !car.isMaintenance);
+      if (data.success) {
+        setCars(prev => prev.map(c => c.id === car.id ? { 
+          ...c, 
+          isMaintenance: !car.isMaintenance,
+          available: !car.isMaintenance ? false : true // Jika masuk perbaikan, tidak tersedia. Jika selesai, tersedia.
+        } : c));
+      }
+    } catch (err) {
+      alert(getErrorMessage(err));
+    }
+  };
+
   const addFeature = () => {
     if (featInput.trim() && !form.features.includes(featInput.trim())) {
       setForm(f => ({ ...f, features: [...f.features, featInput.trim()] }));
@@ -110,6 +152,15 @@ const ManageCarPage = () => {
   };
 
   const removeFeature = (feat) => setForm(f => ({ ...f, features: f.features.filter(x => x !== feat) }));
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Tampilkan preview lokal langsung
+    const previewUrl = URL.createObjectURL(file);
+    setForm(f => ({ ...f, imageFile: file, imagePreview: previewUrl }));
+  };
 
   return (
     <div className="space-y-5">
@@ -155,14 +206,20 @@ const ManageCarPage = () => {
                     <td className="px-5 py-3.5 text-gray-600">{car.transmission}</td>
                     <td className="px-5 py-3.5 font-semibold text-gray-800">{formatCurrency(car.pricePerDay || car.price_per_day)}</td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${car.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                        {car.available ? 'Tersedia' : 'Tidak Tersedia'}
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                        car.isMaintenance ? 'bg-amber-100 text-amber-700' : 
+                        car.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {car.isMaintenance ? 'Dalam Perbaikan' : car.available ? 'Tersedia' : 'Tidak Tersedia'}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => openEdit(car)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleToggle(car.id)} className={`p-1.5 rounded-lg ${car.available ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`} title="Toggle">
+                        <button onClick={() => handleMaintenanceToggle(car)} className={`p-1.5 rounded-lg ${car.isMaintenance ? 'text-white bg-amber-500 hover:bg-amber-600' : 'text-amber-500 hover:bg-amber-50'}`} title="Perbaikan">
+                          <Wrench className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleToggle(car.id)} className={`p-1.5 rounded-lg ${car.available ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'}`} title="Toggle Tersedia/Tidak">
                           {car.available ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                         </button>
                         <button onClick={() => handleDelete(car.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Hapus"><Trash2 className="w-4 h-4" /></button>
@@ -217,8 +274,28 @@ const ManageCarPage = () => {
           </div>
           <div><label className="form-label">Nomor Plat</label>
             <input value={form.plateNumber} onChange={e => setForm(f => ({ ...f, plateNumber: e.target.value }))} placeholder="B 1234 ABC" className="form-input" /></div>
-          <div><label className="form-label">URL Gambar</label>
-            <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="https://..." className="form-input" /></div>
+          
+          <div>
+            <label className="form-label">Gambar Kendaraan</label>
+            <div className="flex items-center gap-4">
+              {(form.imagePreview || form.image) && (
+                <img src={form.imagePreview || form.image} alt="Preview" className="w-20 h-14 object-cover rounded-lg border border-gray-200" />
+              )}
+              <div className="flex-1">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImageUpload} 
+                  disabled={uploadingImage || saving}
+                  className="form-input p-1.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" 
+                />
+                {uploadingImage && <p className="text-xs text-primary-600 mt-1">Sedang mengunggah gambar...</p>}
+              </div>
+            </div>
+            {/* Opsi input manual (fallback) */}
+            <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value, imageFile: null, imagePreview: '' }))} placeholder="Atau paste URL gambar..." className="form-input mt-2 text-xs" disabled={uploadingImage || saving} />
+          </div>
+
           <div><label className="form-label">Deskripsi</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} className="form-input resize-none" /></div>
           <div>

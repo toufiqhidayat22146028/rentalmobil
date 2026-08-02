@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 80 400 320" width="100%" height="100%">
+  <!-- Latar Belakang Transparan -->
+  <rect width="500" height="500" fill="transparent"/>
+
+  <g transform="translate(0, 0)">
+    <!-- Lingkaran Atas Emas -->
+    <path d="M 100 230 C 120 80, 380 80, 400 230" fill="none" stroke="#D4AF37" stroke-width="12" stroke-linecap="round"/>
+    
+    <!-- Lingkaran Bawah Putih -->
+    <path d="M 120 330 C 150 460, 350 460, 380 330" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Siluet Mobil Putih/Emas -->
+    <g transform="translate(250, 180) scale(1.2)">
+      <!-- Body Mobil Belakang & Atap -->
+      <path d="M -150 30 Q -100 10, -50 -10 Q 0 -30, 50 -10 Q 100 10, 150 30" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+      <!-- Body Mobil Bawah -->
+      <path d="M -160 40 L 160 40" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+      <!-- Garis emas aksen mobil -->
+      <path d="M -100 35 Q 0 20, 100 35" fill="none" stroke="#D4AF37" stroke-width="5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Teks Utama SUBULUSSALAM -->
+    <text x="250" y="280" font-family="Arial, sans-serif" font-weight="900" font-size="46" font-style="italic" text-anchor="middle" letter-spacing="2">
+      <tspan fill="#FFFFFF">SUBULUS</tspan><tspan fill="#D4AF37">SALAM</tspan>
+    </text>
+
+    <!-- Teks RENT CAR -->
+    <text x="250" y="320" font-family="Arial, sans-serif" font-weight="bold" font-size="22" fill="#FFFFFF" text-anchor="middle" letter-spacing="8">
+      - RENT CAR -
+    </text>
+
+    <!-- Teks Slogan -->
+    <text x="250" y="355" font-family="Arial, sans-serif" font-weight="bold" font-size="12" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">
+      AMAN <tspan fill="#D4AF37">•</tspan> NYAMAN <tspan fill="#D4AF37">•</tspan> TERPERCAYA
+    </text>
+  </g>
+</svg>

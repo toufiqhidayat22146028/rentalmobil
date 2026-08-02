@@ -16,14 +16,14 @@ router.post('/process', authenticate, async (req, res) => {
     if (!bookingId || !paymentMethod)
       return res.status(400).json({ success: false, message: 'Booking ID dan metode pembayaran wajib diisi.' });
 
-    const [[booking]] = await pool.query('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+    const [[booking]] = await pool.query('SELECT * FROM peminjaman WHERE id = ?', [bookingId]);
     if (!booking)
       return res.status(404).json({ success: false, message: 'Peminjaman tidak ditemukan.' });
 
-    if (booking.user_id !== req.user.id && req.user.role !== 'admin')
+    if (booking.pengguna_id !== req.user.id && req.user.role !== 'admin')
       return res.status(403).json({ success: false, message: 'Akses ditolak.' });
 
-    if (booking.payment_status === 'paid')
+    if (booking.status_pembayaran === 'lunas')
       return res.status(400).json({ success: false, message: 'Transaksi ini sudah dibayar.' });
 
     // Simulasi proses gateway (500ms)
@@ -44,23 +44,23 @@ router.post('/process', authenticate, async (req, res) => {
     const newStatus     = booking.status === 'approved' ? 'active' : booking.status;
 
     await pool.query(
-      `UPDATE bookings SET payment_status='paid', payment_method=?, payment_transaction_id=?,
-        payment_date=?, status=? WHERE id=?`,
+      `UPDATE peminjaman SET status_pembayaran='lunas', metode_pembayaran=?, transaksi_pembayaran_id=?,
+        tanggal_pembayaran=?, status=? WHERE id=?`,
       [paymentMethod, transactionId, paymentDate, newStatus, bookingId]
     );
 
-    const [[updated]] = await pool.query('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+    const [[updated]] = await pool.query('SELECT * FROM peminjaman WHERE id = ?', [bookingId]);
 
     res.json({
       success: true,
       transactionId,
       paymentDate,
-      amount: Number(booking.total_cost),
+      amount: Number(booking.total_biaya),
       message: 'Pembayaran berhasil dikonfirmasi.',
       booking: {
         id:            updated.id,
         status:        updated.status,
-        paymentStatus: updated.payment_status,
+        paymentStatus: updated.status_pembayaran === 'lunas' ? 'paid' : 'unpaid',
       },
     });
   } catch (err) {

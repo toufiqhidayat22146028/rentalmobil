@@ -17,6 +17,14 @@ const carsRoutes     = require('./routes/cars.routes');
 const bookingsRoutes = require('./routes/bookings.routes');
 const usersRoutes    = require('./routes/users.routes');
 const paymentsRoutes = require('./routes/payments.routes');
+const chatRoutes     = require('./routes/chat.routes');
+const reportRoutes   = require('./routes/reports.routes');
+const uploadRoutes   = require('./routes/upload.routes');
+
+
+
+// Cron Jobs
+require('./cron');
 
 const app  = express();
 const PORT = process.env.PORT || 5001;
@@ -26,7 +34,7 @@ const PORT = process.env.PORT || 5001;
 // ============================================================
 
 // Security headers
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // CORS — izinkan semua localhost (dev mode)
 app.use(cors({
@@ -62,6 +70,9 @@ app.use('/api/cars',     carsRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/users',    usersRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/chat',     chatRoutes);
+app.use('/api/reports',  reportRoutes);
+app.use('/api/upload',   uploadRoutes);
 
 // ──────────────────────────────────────────────────────────
 // Health Check — GET /api/health
@@ -76,12 +87,13 @@ app.get('/api/health', (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────
-// Serve React Frontend (hasil build: dist/)
-// Semua request non-API diarahkan ke index.html
+// Serve Static Files (Uploads & React Frontend)
 // ──────────────────────────────────────────────────────────
 const path = require('path');
 const DIST_PATH = path.join(__dirname, '../../dist');
+const UPLOADS_PATH = path.join(__dirname, '../uploads');
 
+app.use('/uploads', express.static(UPLOADS_PATH));
 app.use(express.static(DIST_PATH));
 
 app.get('*', (req, res) => {

@@ -33,12 +33,8 @@ if [ ! -d "$BACKEND_DIR/node_modules" ]; then
   cd "$BACKEND_DIR" && npm install
 fi
 
-# Seed database jika belum ada
-DB_FILE="$BACKEND_DIR/rentalmobil.db"
-if [ ! -f "$DB_FILE" ]; then
-  echo -e "${YELLOW}🌱 Seeding database...${NC}"
-  cd "$BACKEND_DIR" && node src/db/seed.js
-fi
+echo -e "${YELLOW}🌱 Memastikan database siap...${NC}"
+cd "$BACKEND_DIR" && node src/db/seed.js
 
 echo ""
 echo -e "${GREEN}🚀 Menjalankan server...${NC}"

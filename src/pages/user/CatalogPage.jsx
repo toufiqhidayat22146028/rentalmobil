@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, X, Grid3X3, List } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, SlidersHorizontal, X, Grid3X3, List, Loader2 } from 'lucide-react';
 import CarCard from '../../components/car/CarCard';
 import CarFilter from '../../components/car/CarFilter';
-import { MOCK_CARS } from '../../data/mockCars';
+import { carsAPI } from '../../services/api';
 
 const DEFAULT_FILTERS = {
   type: '', brand: '', transmission: '', available: '', maxPrice: 1500000,
@@ -16,11 +17,36 @@ const SORT_OPTIONS = [
 ];
 
 const CatalogPage = () => {
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState({
+    ...DEFAULT_FILTERS,
+    type: searchParams.get('type') || '',
+    brand: searchParams.get('brand') || '',
+    transmission: searchParams.get('transmission') || '',
+  });
+  const [search, setSearch] = useState(searchParams.get('q') || '');
   const [sort, setSort] = useState('default');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+
+  // Sinkronkan filter jika parameter pencarian di URL berubah
+  useEffect(() => {
+    const typeParam = searchParams.get('type') || '';
+    const brandParam = searchParams.get('brand') || '';
+    const transParam = searchParams.get('transmission') || '';
+    const qParam = searchParams.get('q') || '';
+    
+    setFilters((f) => ({
+      ...f,
+      type: typeParam,
+      brand: brandParam,
+      transmission: transParam,
+    }));
+    setSearch(qParam);
+  }, [searchParams]);
+
+  const [cars, setCars] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleFilterChange = (key, value) => setFilters((f) => ({ ...f, [key]: value }));
   const handleReset = () => setFilters(DEFAULT_FILTERS);
@@ -29,26 +55,31 @@ const CatalogPage = () => {
     k === 'maxPrice' ? v < 1500000 : v !== ''
   ).length;
 
-  // Proses filter + search + sort
-  const filteredCars = useMemo(() => {
-    let result = MOCK_CARS.filter((car) => {
-      const q = search.toLowerCase();
-      if (q && !car.name.toLowerCase().includes(q) && !car.brand.toLowerCase().includes(q)) return false;
-      if (filters.type && car.type !== filters.type) return false;
-      if (filters.brand && car.brand !== filters.brand) return false;
-      if (filters.transmission && car.transmission !== filters.transmission) return false;
-      if (filters.available !== '' && String(car.available) !== filters.available) return false;
-      if (car.pricePerDay > filters.maxPrice) return false;
-      return true;
-    });
-
-    switch (sort) {
-      case 'price_asc':  result = [...result].sort((a, b) => a.pricePerDay - b.pricePerDay); break;
-      case 'price_desc': result = [...result].sort((a, b) => b.pricePerDay - a.pricePerDay); break;
-      case 'rating':     result = [...result].sort((a, b) => b.rating - a.rating); break;
+  const fetchCars = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await carsAPI.getAll({
+        type: filters.type,
+        brand: filters.brand,
+        transmission: filters.transmission,
+        available: filters.available,
+        maxPrice: filters.maxPrice,
+        sort: sort,
+        search: search,
+      });
+      if (res.data.success) {
+        setCars(res.data.data);
+      }
+    } catch (err) {
+      console.error('[Catalog] Gagal memuat kendaraan:', err);
+    } finally {
+      setIsLoading(false);
     }
-    return result;
-  }, [filters, search, sort]);
+  }, [filters, sort, search]);
+
+  useEffect(() => {
+    fetchCars();
+  }, [fetchCars]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -111,10 +142,15 @@ const CatalogPage = () => {
         <div className="flex-1 min-w-0">
           {/* Hasil */}
           <p className="text-sm text-gray-500 mb-4">
-            Menampilkan <span className="font-semibold text-gray-700">{filteredCars.length}</span> dari {MOCK_CARS.length} kendaraan
+            Menampilkan <span className="font-semibold text-gray-700">{cars.length}</span> kendaraan
           </p>
 
-          {filteredCars.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white border border-gray-100 rounded-xl shadow-soft">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              <p className="text-slate-400 text-sm font-medium">Memuat kendaraan...</p>
+            </div>
+          ) : cars.length === 0 ? (
             <div className="text-center py-20 card">
               <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <h3 className="font-semibold text-gray-600 mb-1">Kendaraan Tidak Ditemukan</h3>
@@ -129,7 +165,7 @@ const CatalogPage = () => {
                 ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5'
                 : 'flex flex-col gap-4'
             }>
-              {filteredCars.map((car) => <CarCard key={car.id} car={car} />)}
+              {cars.map((car) => <CarCard key={car.id} car={car} />)}
             </div>
           )}
         </div>

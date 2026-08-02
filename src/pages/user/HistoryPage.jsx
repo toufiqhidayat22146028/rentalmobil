@@ -31,10 +31,6 @@ const HistoryPage = () => {
     : myBookings.filter((b) => b.status === activeTab);
 
   const handlePaymentSuccess = async (txId, methodName) => {
-    await updatePaymentStatus(payingBooking.id, {
-      paymentMethod:  methodName,
-      transactionId:  txId,
-    });
     setPayingBooking(null);
     // Refresh data
     fetchBookings();

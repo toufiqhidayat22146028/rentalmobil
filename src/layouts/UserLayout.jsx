@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import ChatbotWidget from '../components/chatbot/ChatbotWidget';
+import { useAuth } from '../context/AuthContext';
 
 // ============================================================
 // KOMPONEN: UserLayout
@@ -18,6 +19,8 @@ import ChatbotWidget from '../components/chatbot/ChatbotWidget';
 //   [ChatbotWidget]   <- Fixed di pojok kanan bawah
 // ============================================================
 const UserLayout = () => {
+  const { user } = useAuth();
+  
   return (
     // min-h-screen: Pastikan layout memenuhi minimal tinggi viewport
     // flex flex-col: Susun elemen secara vertikal agar footer selalu di bawah
@@ -47,9 +50,9 @@ const UserLayout = () => {
 
       {/* 
         CHATBOT WIDGET - Selalu tampil di semua halaman user
-        Posisinya fixed di pojok kanan bawah (diatur di dalam ChatbotWidget)
+        Sembunyikan untuk role admin agar tidak mengganggu operasional.
       */}
-      <ChatbotWidget />
+      {user?.role !== 'admin' && <ChatbotWidget />}
     </div>
   );
 };

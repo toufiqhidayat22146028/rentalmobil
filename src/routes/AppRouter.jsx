@@ -16,6 +16,8 @@ import CarDetailPage  from '../pages/user/CarDetailPage';
 import BookingPage    from '../pages/user/BookingPage';
 import HistoryPage    from '../pages/user/HistoryPage';
 import ProfilePage    from '../pages/user/ProfilePage';
+import ContactPage    from '../pages/user/ContactPage';
+import AboutPage      from '../pages/user/AboutPage';
 
 // Auth Pages
 import LoginPage      from '../pages/auth/LoginPage';
@@ -27,6 +29,7 @@ import ManageCarPage      from '../pages/admin/ManageCarPage';
 import ManageBookingPage  from '../pages/admin/ManageBookingPage';
 import ManageUserPage     from '../pages/admin/ManageUserPage';
 import ReportPage         from '../pages/admin/ReportPage';
+import ManageChatPage     from '../pages/admin/ManageChatPage';
 
 const AppRouter = () => {
   return (
@@ -50,6 +53,8 @@ const AppRouter = () => {
               {/* Halaman Publik */}
               <Route path="/"          element={<HomePage />} />
               <Route path="/katalog"   element={<CatalogPage />} />
+              <Route path="/tentang"   element={<AboutPage />} />
+              <Route path="/kontak"     element={<ContactPage />} />
               <Route path="/mobil/:id" element={<CarDetailPage />} />
 
               {/* Halaman Terproteksi - butuh login */}
@@ -71,6 +76,7 @@ const AppRouter = () => {
                 <Route path="/admin/peminjaman"   element={<ManageBookingPage />} />
                 <Route path="/admin/pengguna"     element={<ManageUserPage />} />
                 <Route path="/admin/laporan"      element={<ReportPage />} />
+                <Route path="/admin/chat"         element={<ManageChatPage />} />
               </Route>
             </Route>
 

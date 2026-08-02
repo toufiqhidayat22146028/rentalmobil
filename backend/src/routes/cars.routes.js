@@ -6,19 +6,31 @@ const router = require('express').Router();
 const pool   = require('../db/database');
 const { authenticate, adminOnly } = require('../middleware/auth');
 
-// Helper: parse JSON fields yang disimpan di MySQL
-const parseCar = (car) => {
-  if (!car) return null;
+// Helper: parse JSON fields yang disimpan di MySQL dan mapping ke properti bahasa Inggris (camelCase)
+const parseCar = (row) => {
+  if (!row) return null;
   return {
-    ...car,
-    available:         Boolean(car.available),
-    features:          typeof car.features === 'string' ? JSON.parse(car.features) : (car.features || []),
-    specs:             typeof car.specs    === 'string' ? JSON.parse(car.specs)    : (car.specs    || {}),
-    pricePerDay:       Number(car.price_per_day),
-    driverCostPerDay:  Number(car.driver_cost_per_day),
-    totalReviews:      car.total_reviews,
-    plateNumber:       car.plate_number,
-    createdAt:         car.created_at,
+    id:                row.id,
+    name:              row.nama,
+    brand:             row.merek,
+    type:              row.tipe,
+    year:              row.tahun,
+    capacity:          row.kapasitas,
+    transmission:      row.transmisi,
+    fuel:              row.bahan_bakar,
+    pricePerDay:       Number(row.harga_per_hari),
+    driverCostPerDay:  Number(row.biaya_sopir_per_hari),
+    available:         Boolean(row.tersedia),
+    isMaintenance:     Boolean(row.sedang_perbaikan),
+    description:       row.deskripsi,
+    color:             row.warna,
+    plateNumber:       row.nomor_plat,
+    image:             row.gambar,
+    rating:            Number(row.rating),
+    totalReviews:      row.total_ulasan,
+    features:          typeof row.fitur === 'string' ? JSON.parse(row.fitur) : (row.fitur || []),
+    specs:             typeof row.spesifikasi === 'string' ? JSON.parse(row.spesifikasi) : (row.spesifikasi || {}),
+    createdAt:         row.dibuat_pada,
   };
 };
 
@@ -27,22 +39,22 @@ router.get('/', async (req, res) => {
   try {
     const { type, brand, transmission, available, maxPrice, sort, search } = req.query;
 
-    let sql    = 'SELECT * FROM cars WHERE 1=1';
+    let sql    = 'SELECT * FROM mobil WHERE 1=1';
     const params = [];
 
-    if (type)         { sql += ' AND type = ?';         params.push(type); }
-    if (brand)        { sql += ' AND brand = ?';        params.push(brand); }
-    if (transmission) { sql += ' AND transmission = ?'; params.push(transmission); }
+    if (type)         { sql += ' AND tipe = ?';         params.push(type); }
+    if (brand)        { sql += ' AND merek = ?';        params.push(brand); }
+    if (transmission) { sql += ' AND transmisi = ?';    params.push(transmission); }
     if (available !== undefined && available !== '') {
-      sql += ' AND available = ?';
+      sql += ' AND tersedia = ?';
       params.push(available === 'true' ? 1 : 0);
     }
-    if (maxPrice) { sql += ' AND price_per_day <= ?'; params.push(Number(maxPrice)); }
-    if (search)   { sql += ' AND (name LIKE ? OR brand LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    if (maxPrice) { sql += ' AND harga_per_hari <= ?'; params.push(Number(maxPrice)); }
+    if (search)   { sql += ' AND (nama LIKE ? OR merek LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
 
     const sortMap = {
-      price_asc:  'price_per_day ASC',
-      price_desc: 'price_per_day DESC',
+      price_asc:  'harga_per_hari ASC',
+      price_desc: 'harga_per_hari DESC',
       rating:     'rating DESC',
       default:    'id ASC',
     };
@@ -59,8 +71,8 @@ router.get('/', async (req, res) => {
 router.get('/meta/options', async (req, res) => {
   try {
     const [[types], [brands]] = await Promise.all([
-      pool.query('SELECT DISTINCT type  FROM cars ORDER BY type'),
-      pool.query('SELECT DISTINCT brand FROM cars ORDER BY brand'),
+      pool.query('SELECT DISTINCT tipe AS type FROM mobil ORDER BY tipe'),
+      pool.query('SELECT DISTINCT merek AS brand FROM mobil ORDER BY merek'),
     ]);
     res.json({ success: true, types: types.map(r => r.type), brands: brands.map(r => r.brand) });
   } catch (err) {
@@ -71,7 +83,7 @@ router.get('/meta/options', async (req, res) => {
 // ── GET /api/cars/:id ─────────────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
-    const [[car]] = await pool.query('SELECT * FROM cars WHERE id = ?', [req.params.id]);
+    const [[car]] = await pool.query('SELECT * FROM mobil WHERE id = ?', [req.params.id]);
     if (!car) return res.status(404).json({ success: false, message: 'Kendaraan tidak ditemukan.' });
     res.json({ success: true, data: parseCar(car) });
   } catch (err) {
@@ -90,9 +102,9 @@ router.post('/', authenticate, adminOnly, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nama, merek, dan harga wajib diisi.' });
 
     const [result] = await pool.query(
-      `INSERT INTO cars (name, brand, type, year, capacity, transmission, fuel,
-        price_per_day, driver_cost_per_day, available, description, color,
-        plate_number, image, features, specs)
+      `INSERT INTO mobil (nama, merek, tipe, tahun, kapasitas, transmisi, bahan_bakar,
+        harga_per_hari, biaya_sopir_per_hari, tersedia, deskripsi, warna,
+        nomor_plat, gambar, fitur, spesifikasi)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, brand, type || 'MPV', year || 2023, capacity || 5,
        transmission || 'Manual', fuel || 'Bensin', pricePerDay,
@@ -101,7 +113,7 @@ router.post('/', authenticate, adminOnly, async (req, res) => {
        JSON.stringify(features), JSON.stringify(specs)]
     );
 
-    const [[newCar]] = await pool.query('SELECT * FROM cars WHERE id = ?', [result.insertId]);
+    const [[newCar]] = await pool.query('SELECT * FROM mobil WHERE id = ?', [result.insertId]);
     res.status(201).json({ success: true, data: parseCar(newCar), message: 'Kendaraan berhasil ditambahkan.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -111,7 +123,7 @@ router.post('/', authenticate, adminOnly, async (req, res) => {
 // ── PUT /api/cars/:id ─────────────────────────────────────
 router.put('/:id', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[car]] = await pool.query('SELECT id FROM cars WHERE id = ?', [req.params.id]);
+    const [[car]] = await pool.query('SELECT id FROM mobil WHERE id = ?', [req.params.id]);
     if (!car) return res.status(404).json({ success: false, message: 'Kendaraan tidak ditemukan.' });
 
     const { name, brand, type, year, capacity, transmission, fuel, pricePerDay,
@@ -119,9 +131,9 @@ router.put('/:id', authenticate, adminOnly, async (req, res) => {
             features, specs } = req.body;
 
     await pool.query(
-      `UPDATE cars SET name=?, brand=?, type=?, year=?, capacity=?, transmission=?,
-        fuel=?, price_per_day=?, driver_cost_per_day=?, available=?,
-        description=?, color=?, plate_number=?, image=?, features=?, specs=?
+      `UPDATE mobil SET nama=?, merek=?, tipe=?, tahun=?, kapasitas=?, transmisi=?,
+        bahan_bakar=?, harga_per_hari=?, biaya_sopir_per_hari=?, tersedia=?,
+        deskripsi=?, warna=?, nomor_plat=?, gambar=?, fitur=?, spesifikasi=?
        WHERE id=?`,
       [name, brand, type, year, capacity, transmission, fuel,
        pricePerDay, driverCostPerDay, available ? 1 : 0,
@@ -130,8 +142,36 @@ router.put('/:id', authenticate, adminOnly, async (req, res) => {
        req.params.id]
     );
 
-    const [[updated]] = await pool.query('SELECT * FROM cars WHERE id = ?', [req.params.id]);
+    const [[updated]] = await pool.query('SELECT * FROM mobil WHERE id = ?', [req.params.id]);
     res.json({ success: true, data: parseCar(updated), message: 'Data kendaraan berhasil diperbarui.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── PATCH /api/cars/:id/maintenance ─────────────────────
+router.patch('/:id/maintenance', authenticate, adminOnly, async (req, res) => {
+  try {
+    const { isMaintenance } = req.body;
+    const maintenanceVal = isMaintenance ? 1 : 0;
+    
+    // Jika mobil masuk perbaikan, set tersedia = 0.
+    // Jika mobil selesai perbaikan, set tersedia = 1.
+    const availableVal = isMaintenance ? 0 : 1;
+
+    await pool.query(
+      'UPDATE mobil SET sedang_perbaikan = ?, tersedia = ? WHERE id = ?',
+      [maintenanceVal, availableVal, req.params.id]
+    );
+
+    const [[updatedRow]] = await pool.query('SELECT * FROM mobil WHERE id = ?', [req.params.id]);
+    if (!updatedRow) return res.status(404).json({ success: false, message: 'Kendaraan tidak ditemukan' });
+
+    res.json({
+      success: true,
+      message: isMaintenance ? 'Mobil ditandai dalam perbaikan.' : 'Mobil selesai perbaikan dan tersedia kembali.',
+      data: parseCar(updatedRow)
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -140,10 +180,10 @@ router.put('/:id', authenticate, adminOnly, async (req, res) => {
 // ── DELETE /api/cars/:id ──────────────────────────────────
 router.delete('/:id', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[car]] = await pool.query('SELECT id FROM cars WHERE id = ?', [req.params.id]);
+    const [[car]] = await pool.query('SELECT id FROM mobil WHERE id = ?', [req.params.id]);
     if (!car) return res.status(404).json({ success: false, message: 'Kendaraan tidak ditemukan.' });
 
-    await pool.query('DELETE FROM cars WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM mobil WHERE id = ?', [req.params.id]);
     res.json({ success: true, message: 'Kendaraan berhasil dihapus.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -153,11 +193,11 @@ router.delete('/:id', authenticate, adminOnly, async (req, res) => {
 // ── PATCH /api/cars/:id/toggle ────────────────────────────
 router.patch('/:id/toggle', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[car]] = await pool.query('SELECT id, available FROM cars WHERE id = ?', [req.params.id]);
+    const [[car]] = await pool.query('SELECT id, tersedia FROM mobil WHERE id = ?', [req.params.id]);
     if (!car) return res.status(404).json({ success: false, message: 'Kendaraan tidak ditemukan.' });
 
-    const newStatus = car.available ? 0 : 1;
-    await pool.query('UPDATE cars SET available = ? WHERE id = ?', [newStatus, req.params.id]);
+    const newStatus = car.tersedia ? 0 : 1;
+    await pool.query('UPDATE mobil SET tersedia = ? WHERE id = ?', [newStatus, req.params.id]);
     res.json({
       success: true,
       available: Boolean(newStatus),

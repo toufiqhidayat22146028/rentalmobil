@@ -55,7 +55,17 @@ const ManageBookingPage = () => {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { 
+    fetchAll(); 
+    const interval = setInterval(() => {
+      bookingsAPI.getAll().then(res => {
+        if (res.data.success) setBookings(res.data.data);
+      }).catch(err => {
+        // silent catch
+      });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [fetchAll]);
 
   const getUser = (id) => users[id] || { name: `User #${id}`, email: '-' };
   const getCar  = (id) => cars[id]  || { name: `Car #${id}` };

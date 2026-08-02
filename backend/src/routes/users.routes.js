@@ -6,23 +6,42 @@ const router = require('express').Router();
 const pool   = require('../db/database');
 const { authenticate, adminOnly } = require('../middleware/auth');
 
+const mapUser = (row) => {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.nama,
+    email: row.email,
+    password: row.kata_sandi,
+    phone: row.telepon,
+    address: row.alamat,
+    sim: row.sim,
+    ktp: row.ktp,
+    avatar: row.avatar,
+    role: row.peran,
+    status: row.status === 'aktif' ? 'active' : 'blocked',
+    createdAt: row.dibuat_pada,
+  };
+};
+
 const formatUser = ({ password, ...safe }) => safe;
 
 // ── GET /api/users ────────────────────────────────────────
 router.get('/', authenticate, adminOnly, async (req, res) => {
   try {
     const { search } = req.query;
-    let sql    = "SELECT * FROM users WHERE role = 'user'";
+    let sql    = "SELECT * FROM pengguna WHERE peran = 'user'";
     const params = [];
 
     if (search) {
-      sql += ' AND (name LIKE ? OR email LIKE ?)';
+      sql += ' AND (nama LIKE ? OR email LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY dibuat_pada DESC';
 
     const [rows] = await pool.query(sql, params);
-    res.json({ success: true, data: rows.map(formatUser), total: rows.length });
+    const mapped = rows.map(mapUser).map(formatUser);
+    res.json({ success: true, data: mapped, total: rows.length });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -31,9 +50,9 @@ router.get('/', authenticate, adminOnly, async (req, res) => {
 // ── GET /api/users/:id ────────────────────────────────────
 router.get('/:id', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[user]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
-    if (!user) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan.' });
-    res.json({ success: true, data: formatUser(user) });
+    const [[row]] = await pool.query('SELECT * FROM pengguna WHERE id = ?', [req.params.id]);
+    if (!row) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan.' });
+    res.json({ success: true, data: formatUser(mapUser(row)) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -42,19 +61,20 @@ router.get('/:id', authenticate, adminOnly, async (req, res) => {
 // ── PATCH /api/users/:id/toggle ──────────────────────────
 router.patch('/:id/toggle', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[user]] = await pool.query('SELECT id, status, role FROM users WHERE id = ?', [req.params.id]);
-    if (!user) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan.' });
-    if (user.role === 'admin')
+    const [[row]] = await pool.query('SELECT id, status, peran FROM pengguna WHERE id = ?', [req.params.id]);
+    if (!row) return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan.' });
+    if (row.peran === 'admin')
       return res.status(400).json({ success: false, message: 'Akun admin tidak bisa diblokir.' });
 
-    const newStatus = user.status === 'active' ? 'blocked' : 'active';
-    await pool.query('UPDATE users SET status = ? WHERE id = ?', [newStatus, req.params.id]);
+    const newStatus = row.status === 'aktif' ? 'diblokir' : 'aktif';
+    await pool.query('UPDATE pengguna SET status = ? WHERE id = ?', [newStatus, req.params.id]);
 
-    const [[updated]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    const [[updatedRow]] = await pool.query('SELECT * FROM pengguna WHERE id = ?', [req.params.id]);
+    const updated = mapUser(updatedRow);
     res.json({
       success: true,
       data: formatUser(updated),
-      message: `Pengguna berhasil ${newStatus === 'active' ? 'diaktifkan' : 'diblokir'}.`,
+      message: `Pengguna berhasil ${newStatus === 'aktif' ? 'diaktifkan' : 'diblokir'}.`,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
