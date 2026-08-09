@@ -36,20 +36,8 @@ const PORT = process.env.PORT || 5001;
 // Security headers
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
-// CORS — izinkan semua localhost (dev mode)
-app.use(cors({
-  origin: (origin, callback) => {
-    // Izinkan: tanpa origin (curl/postman), localhost semua port
-    if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+// CORS - izinkan semua origin untuk kemudahan deployment
+app.use(cors());
 
 // Handle preflight requests
 app.options('*', cors());

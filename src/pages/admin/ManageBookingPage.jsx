@@ -183,6 +183,7 @@ const ManageBookingPage = () => {
                 ['Tanggal Mulai', formatDate(b.startDate || b.start_date)],
                 ['Tanggal Kembali', formatDate(b.endDate || b.end_date)],
                 ['Durasi', `${b.days} hari`],
+                ['Area Pemakaian', b.usageArea === 'luar_kota' ? 'Luar Kota (+Rp 150k/hari)' : 'Dalam Kota'],
                 ['Dengan Sopir', (b.withDriver || b.with_driver) ? 'Ya' : 'Tidak'],
                 ['Lokasi', b.pickupLocation || b.pickup_location || '-'],
                 ['Status Bayar', (b.paymentStatus || b.payment_status) === 'paid' ? '✅ Lunas' : '❌ Belum Bayar'],

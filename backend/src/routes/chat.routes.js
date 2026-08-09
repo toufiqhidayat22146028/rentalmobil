@@ -1,416 +1,260 @@
 // ============================================================
-// CHAT ROUTES — /api/chat (MySQL version)
+// CHAT ROUTES - /api/chat (MySQL version)
 // Live chat dengan FAQ bot & admin support
 // ============================================================
 
 const router = require('express').Router();
-const pool   = require('../db/database');
+const pool = require('../db/database');
 const { authenticate, adminOnly } = require('../middleware/auth');
 
+// ── UTILITAS BOT ──
 const normalizeText = (text = '') => text.toLowerCase().trim();
 
 const formatCurrency = (value) => {
-  const amount = Number(value || 0);
-  if (Number.isNaN(amount)) return 'Rp 0';
-  return `Rp ${amount.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  if (typeof value !== 'number') return value || '';
+  return `Rp ${value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 };
 
-const parseCarRow = (row) => {
-  if (!row) return null;
-  return {
-    id: row.id,
-    name: row.nama,
-    brand: row.merek,
-    type: row.tipe,
-    year: row.tahun,
-    capacity: row.kapasitas,
-    transmission: row.transmisi,
-    fuel: row.bahan_bakar,
-    pricePerDay: Number(row.harga_per_hari),
-    available: Boolean(row.tersedia),
-  };
-};
+const WELCOME_MESSAGE = '👋 Halo! Selamat datang di layanan Rental Mobil.\n\nSaya dengan Customer Service. Ada yang bisa kami bantu hari ini?\n\nSilakan pilih menu:\n\n🚗 Daftar Mobil\n💰 Harga Rental\n📅 Cara Pesan\n📋 Syarat & Ketentuan\n👨‍💼 Hubungi Admin';
 
-const WELCOME_MESSAGE =
-  '👋 Halo! Selamat datang di layanan Rental Mobil 🚗\n\n' +
-  'Saya siap membantu Anda mendapatkan informasi dan melakukan pemesanan.\n\n' +
-  'Silakan pilih menu:\n\n' +
-  '🚗 Daftar Mobil\n' +
-  '💰 Harga Rental\n' +
-  '📅 Cek Ketersediaan\n' +
-  '📝 Cara Pemesanan\n' +
-  '📋 Syarat & Ketentuan\n' +
-  '💳 Informasi Pembayaran\n' +
-  '📦 Cek Pesanan\n' +
-  '❌ Pembatalan Pesanan\n' +
-  '💬 Pertanyaan Lainnya\n' +
-  '👨‍💼 Hubungi Admin\n\n' +
-  'Silakan pilih salah satu menu atau ketik pertanyaan mengenai rental mobil.';
-
-const parseIndonesianDateText = (text) => {
-  if (!text) return null;
-  const match = text.trim().toLowerCase().match(/(\d{1,2})\s*(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)?\s*(\d{4})?/);
-  if (!match) return null;
-  const day = parseInt(match[1], 10);
-  const months = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
-  let month = new Date().getMonth();
-  if (match[2]) {
-    const m = match[2].substring(0, 3);
-    const mIndex = months.indexOf(m);
-    if (mIndex !== -1) month = mIndex;
-  }
-  const year = match[3] ? parseInt(match[3], 10) : new Date().getFullYear();
-  const d = new Date(year, month, day);
-  return d.toISOString().split('T')[0];
-};
-
-const checkAvailability = async (carId, startDate, endDate) => {
-  const [rows] = await pool.query(`
-    SELECT * FROM peminjaman 
-    WHERE mobil_id = ? 
-      AND status IN ('pending', 'approved', 'active') 
-      AND (tanggal_mulai <= ? AND tanggal_kembali >= ?)
-  `, [carId, endDate, startDate]);
-  return rows.length === 0;
-};
-
-const buildCarListMessage = async () => {
-  const [rows] = await pool.query('SELECT * FROM mobil ORDER BY id ASC');
-  const today = new Date().toISOString().split('T')[0];
-  
-  const suggestions = await Promise.all(rows.map(async row => {
-    const isAvailable = await checkAvailability(row.id, today, today);
-    const isReallyAvailable = Boolean(row.tersedia) && isAvailable;
-    
-    return {
-      id: `car-${row.id}`,
-      label: `🚘 ${row.nama}${isReallyAvailable ? '' : ' (Tidak Tersedia)'}`,
-      message: row.nama,
-      next: 'car_detail'
-    };
-  }));
-  
-  suggestions.push({ id: 'cars-back', label: '🏠 Menu Utama', message: 'Menu Utama', next: 'main' });
-
-  return {
-    response: '🚗 **Daftar Mobil**\n\nSilakan pilih mobil yang ingin Anda lihat.',
-    suggestions
-  };
-};
-
-const buildPriceListMessage = async () => {
-  return '💰 **Harga Rental**\n\nSilakan pilih mobil yang ingin Anda ketahui harganya.';
-};
-
-const buildBookingGuide = () =>
-  '📝 **Cara Pemesanan**\n\n' +
-  '1️⃣ Pilih mobil.\n' +
-  '2️⃣ Cek ketersediaan.\n' +
-  '3️⃣ Tentukan tanggal rental.\n' +
-  '4️⃣ Isi data pelanggan.\n' +
-  '5️⃣ Periksa data pemesanan.\n' +
-  '6️⃣ Konfirmasi pemesanan.\n\n' +
-  'Silakan ikuti proses pemesanan yang tersedia pada sistem.';
-
-const buildTermsMessage = () =>
-  '📋 **Syarat & Ketentuan**\n\n' +
-  'Pelanggan wajib memberikan data yang benar dan memenuhi persyaratan rental yang berlaku.\n\n' +
-  'Silakan membaca seluruh ketentuan sebelum melakukan pemesanan.';
-
-const buildPaymentInfoMessage = () =>
-  '💳 **Informasi Pembayaran**\n\n' +
-  'Pembayaran dilakukan sesuai metode pembayaran yang tersedia pada sistem.\n\n' +
-  'Silakan pilih:\n' +
-  '💳 Metode Pembayaran\n' +
-  '📦 Status Pembayaran\n' +
-  '🔙 Menu Utama';
-
-const buildCheckOrderPrompt = () =>
-  '📦 **Cek Pesanan**\n\n' +
-  'Silakan masukkan:\n\n' +
-  '🔢 Nomor Pesanan\n' +
-  'atau\n' +
-  '📱 Nomor WhatsApp yang digunakan saat melakukan pemesanan.';
-
-const buildCancelPrompt = () =>
-  '❌ **Pembatalan Pesanan**\n\n' +
-  'Silakan masukkan nomor pesanan atau nomor WhatsApp yang digunakan saat melakukan pemesanan.';
-
-const buildOtherQuestionPrompt = () =>
-  '💬 Silakan tuliskan pertanyaan Anda mengenai layanan rental mobil.\n\n' +
-  'Contoh:\n' +
-  '🚗 Mobil apa yang tersedia?\n' +
-  '💰 Berapa harga Avanza?\n' +
-  '📅 Apakah Avanza tersedia?\n' +
-  '📝 Bagaimana cara rental?\n' +
-  '💳 Bagaimana cara pembayaran?';
+// Removed unused ADMIN_CONTACT variable
 
 const findCarByText = async (text) => {
   const normalized = normalizeText(text);
   if (!normalized) return null;
 
-  const [rows] = await pool.query('SELECT * FROM mobil');
-  
-  const foundCar = rows.find((car) => {
-    const name = normalizeText(car.nama);
-    const shortName = name.replace(/toyota|honda|mitsubishi|daihatsu|suzuki|nissan/g, '').trim();
+  try {
+    const [rows] = await pool.query('SELECT * FROM mobil WHERE tersedia = 1');
+    const cars = rows.map(row => ({
+      name: row.nama,
+      brand: row.merek,
+      type: row.tipe,
+      capacity: row.kapasitas,
+      transmission: row.transmisi,
+      fuel: row.bahan_bakar,
+      pricePerDay: Number(row.harga_per_hari)
+    }));
     
-    if (normalized.includes(name)) return true;
-    if (shortName && normalized.includes(shortName)) return true;
-    
-    const words = name.split(' ').filter(w => w.length > 3);
-    return words.some(word => normalized.includes(word));
-  });
+    let bestMatch = null;
+    let highestScore = 0;
 
-  return foundCar ? parseCarRow(foundCar) : null;
+    for (const car of cars) {
+      const name = normalizeText(car.name);
+      const shortName = name.replace(/toyota|honda|mitsubishi|daihatsu|suzuki/g, '').trim();
+      let score = 0;
+
+      if (normalized.includes(name)) {
+        score += 100;
+      } else if (shortName && normalized.includes(shortName)) {
+        score += 80;
+      } else {
+        const words = name.split(' ').filter(w => w.length > 2); // Ignore short terms like 'G', 'MT', 'AT', '1.2'
+        const matchedWords = words.filter(word => normalized.includes(word));
+        score += matchedWords.length * 10;
+        
+        // Also boost if brand matches
+        if (normalized.includes(car.brand.toLowerCase())) {
+          score += 5;
+        }
+      }
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = car;
+      }
+    }
+
+    // Only return if we have a reasonable match (e.g. at least one significant word matched)
+    return highestScore >= 10 ? bestMatch : null;
+  } catch (error) {
+    console.error('Error finding car:', error);
+    return null;
+  }
+};
+
+const buildCarListMessage = async () => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM mobil WHERE tersedia = 1 LIMIT 5');
+    if (rows.length === 0) return 'Saat ini tidak ada mobil yang tersedia.';
+    
+    const lines = rows.map((car) =>
+      `• ${car.nama} (${car.tipe}) - ${car.kapasitas} orang - ${formatCurrency(Number(car.harga_per_hari))}/hari`
+    );
+    return `🚗 Berikut daftar mobil rental kami:\n\n${lines.join('\n')}\n\nSilakan balas dengan nama mobil untuk melihat harga.`;
+  } catch (err) {
+    console.error('Error buildCarList:', err);
+    return 'Terjadi kesalahan saat mengambil daftar mobil.';
+  }
+};
+
+const buildPriceListMessage = async () => {
+  return `💰 Harga sewa per hari (Dalam Kota):\n\n_Catatan: Untuk pemakaian Luar Kota, dikenakan biaya tambahan sebesar Rp 150.000/hari._\n\nKetik nama mobil atau pilih dari menu di bawah untuk melihat estimasi harga per durasi.`;
 };
 
 const getBotResponse = async (userMessage) => {
   const lower = normalizeText(userMessage);
   const car = await findCarByText(lower);
-  const result = { response: '', setAdminMode: false };
 
-  if (/hubungi admin|kontak admin|chat admin|customer service|👨‍💼 hubungi admin/.test(lower)) {
-    result.response = '👨‍💼 Baik, percakapan Anda akan dilanjutkan oleh Admin. Silakan tunggu, Admin akan membantu Anda melalui chat ini.';
-    result.setAdminMode = true;
-    return result;
+  if (/hubungi admin|kontak admin|chat admin|customer service/.test(lower)) {
+    return '👨‍💼 Saya akan meneruskan pesan Anda ke Admin. Silakan tunggu sebentar, Admin kami akan segera membalas.';
   }
 
-  if (/daftar mobil|lihat mobil|armada|list mobil|🚗 daftar mobil/.test(lower)) {
-    const listMsg = await buildCarListMessage();
-    result.response = listMsg.response;
-    result.suggestions = listMsg.suggestions;
-    return result;
+  if (/menu utama|awal/.test(lower)) {
+    return WELCOME_MESSAGE;
   }
 
-  if (/harga rental|harga sewa|berapa harga|tarif|biaya sewa|💰 harga rental/.test(lower)) {
+  if (/daftar mobil|lihat mobil|armada|list mobil/.test(lower)) {
+    return await buildCarListMessage();
+  }
+
+  if (/harga|tarif|biaya/.test(lower)) {
     if (car) {
-      const dayMatch = lower.match(/(\d+)\s*hari/);
-      if (dayMatch) {
-        const days = parseInt(dayMatch[1], 10);
-        const total = car.pricePerDay * days;
-        result.response = `💰 **Estimasi Rental**\n\nMobil: ${car.name}\nDurasi: ${days} hari\nTotal Harga: ${formatCurrency(total)}\n\nApakah Anda ingin melanjutkan pemesanan?`;
-      } else {
-        result.response = `🚗 ${car.name}\n\n💰 Harga rental: ${formatCurrency(car.pricePerDay)}/hari\n\nBerapa hari Anda ingin menyewa?`;
-      }
-      return result;
+      return `🚗 ${car.name}\n\n💰 Harga rental: ${formatCurrency(car.pricePerDay)}/hari\n\nBerapa hari Anda ingin menyewa?`;
     }
-    result.response = await buildPriceListMessage();
-    return result;
+    return await buildPriceListMessage();
   }
 
-  // Handle specific car query if it contains days without "harga rental" keyword
-  if (car) {
-    const dayMatch = lower.match(/(\d+)\s*hari/);
-    if (dayMatch) {
-      const days = parseInt(dayMatch[1], 10);
-      const total = car.pricePerDay * days;
-      result.response = `💰 **Estimasi Rental**\n\nMobil: ${car.name}\nDurasi: ${days} hari\nTotal Harga: ${formatCurrency(total)}\n\nApakah Anda ingin melanjutkan pemesanan?`;
-      return result;
-    }
+  if (/cara pesan|cara pemesanan|cara booking|pesan mobil|booking/.test(lower)) {
+    return '📅 **Cara Booking:**\n\n1. Pilih mobil yang diinginkan.\n2. Masukkan tanggal sewa dan tanggal kembali.\n3. Isi data penyewa.\n4. Kirim request booking.\n5. Tunggu konfirmasi admin.\n\nUntuk bantuan langsung, hubungi admin.';
   }
 
-  if (/cek ketersediaan|ketersediaan|tersedia|📅 cek ketersediaan/.test(lower)) {
-    const dateMatch = lower.match(/(\d{1,2}(?:\s*(?:januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)[a-z]*\s*(?:\d{4})?)?)\s*(?:sampai|hingga|-|s\/d)\s*(\d{1,2}(?:\s*(?:januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)[a-z]*\s*(?:\d{4})?)?)/);
-    
-    if (car && dateMatch) {
-       const startStr = dateMatch[1].trim();
-       const endStr = dateMatch[2].trim();
-       const parsedStart = parseIndonesianDateText(startStr);
-       const parsedEnd = parseIndonesianDateText(endStr);
-       
-       if (parsedStart && parsedEnd) {
-         const isAvailable = await checkAvailability(car.id, parsedStart, parsedEnd);
-         if (isAvailable) {
-           result.response = `✅ **Mobil Tersedia**\n\nMobil ${car.name} tersedia untuk tanggal ${startStr} sampai ${endStr}.\n\nSilakan pilih menu **Mulai Pemesanan** untuk melanjutkan.`;
-           result.suggestions = [{ id: 'avail-order', label: '📝 Mulai Pemesanan', message: 'Mulai Pemesanan', next: 'order' }];
-         } else {
-           result.response = `❌ **Mobil Tidak Tersedia**\n\nMohon maaf, ${car.name} tidak tersedia untuk tanggal ${startStr} sampai ${endStr}.\n\nSilakan pilih tanggal lain atau cek mobil lainnya:`;
-           result.suggestions = [
-             { id: 'avail-other-date', label: '📅 Cek Tanggal Lain', message: 'Cek Ketersediaan', next: 'availability' },
-             { id: 'avail-other-car', label: '🚗 Cek Daftar Mobil', message: 'Daftar Mobil', next: 'cars' }
-           ];
-         }
-       } else {
-         result.response = `✅ **Mobil Tersedia**\n\nMobil ${car.name} tersedia untuk tanggal ${startStr} sampai ${endStr}.\n\nSilakan pilih menu **Mulai Pemesanan** untuk melanjutkan.`;
-         result.suggestions = [{ id: 'avail-order', label: '📝 Mulai Pemesanan', message: 'Mulai Pemesanan', next: 'order' }];
-       }
-       return result;
-    }
-
-    if (car) {
-      result.response = `📅 **Cek Ketersediaan**\n\nSilakan masukkan tanggal mulai dan tanggal selesai untuk ${car.name}.`;
-      return result;
-    }
-    result.response = '📅 **Cek Ketersediaan**\n\nSilakan masukkan nama mobil dan tanggal rental.\n\nContoh:\n"Toyota Avanza, 10 sampai 12 Agustus."';
-    return result;
+  if (/syarat|ketentuan|persyaratan/.test(lower)) {
+    return '📋 **Persyaratan sewa mobil:**\n\n• KTP atau identitas diri yang masih berlaku.\n• SIM A yang masih berlaku.\n• Deposit jika diperlukan.\n• Data penyewa yang lengkap dan benar.\n\nUntuk persyaratan khusus, silakan hubungi admin.';
+  }
+  
+  if (/kembali|pengembalian/.test(lower)) {
+    return '⏰ **Kebijakan pengembalian:**\n\n• Kembalikan mobil sesuai tanggal dan waktu yang disepakati.\n• Jika terlambat, segera beri tahu admin.\n• Denda keterlambatan dapat dikenakan sesuai ketentuan.';
   }
 
-  if (/cara pemesanan|cara booking|bagaimana cara memesan|bagaimana cara rental|📝 cara pemesanan/.test(lower)) {
-    result.response = buildBookingGuide();
-    return result;
+  // Cek jika ada input hari untuk estimasi
+  const matchHari = lower.match(/(\d+)\s*(hari|hr|day|days)/i);
+  if (matchHari && car) {
+    const days = parseInt(matchHari[1], 10);
+    const total = formatCurrency(car.pricePerDay * days);
+    return `💰 Estimasi harga ${car.name}:\n\nHarga per hari: ${formatCurrency(car.pricePerDay)}\nTotal untuk ${days} hari: ${total}\n\nJika ingin melakukan booking, ketik "Cara Pesan" atau hubungi admin.`;
+  } else if (car) {
+     return `🚗 Detail kendaraan:\n\nNama: ${car.name}\nTipe: ${car.type}\nKapasitas: ${car.capacity} orang\nTransmisi: ${car.transmission}\nBahan bakar: ${car.fuel}\nHarga: ${formatCurrency(car.pricePerDay)}/hari\n\nUntuk menghitung estimasi harga, ketik durasi sewa dalam hari, misalnya "2 hari".`;
   }
 
-  if (/syarat|ketentuan|persyaratan|📋 syarat & ketentuan/.test(lower)) {
-    result.response = buildTermsMessage();
-    return result;
-  }
-
-  if (/informasi pembayaran|metode pembayaran|status pembayaran|pembayaran/.test(lower)) {
-    result.response = buildPaymentInfoMessage();
-    return result;
-  }
-
-  if (/cek pesanan|nomor pesanan|status pesanan|status order/.test(lower)) {
-    result.response = buildCheckOrderPrompt();
-    return result;
-  }
-
-  if (/pembatalan|batalkan|cancel/.test(lower)) {
-    result.response = buildCancelPrompt();
-    return result;
-  }
-
-  if (/pertanyaan lain|pertanyaan lainnya|lainnya|tanya/.test(lower)) {
-    result.response = buildOtherQuestionPrompt();
-    return result;
-  }
-
-  if (car) {
-    result.response = `🚘 **${car.name}**\n\n💺 Kapasitas: ${car.capacity} orang\n⚙️ Transmisi: ${car.transmission}\n⛽ Bahan bakar: ${car.fuel}\n💰 Harga: ${formatCurrency(car.pricePerDay)}/hari\n\nSilakan pilih menu berikut:\n\n📅 Cek Ketersediaan\n📝 Cara Pemesanan`;
-    return result;
-  }
-
-  result.response = 'Maaf 🙏 Saya belum dapat membantu dengan pertanyaan tersebut. Silakan gunakan menu **Hubungi Admin** agar dapat dibantu langsung.';
-  return result;
+  return '🤔 Maaf, saya belum mengerti pertanyaan Anda.\n\nSilakan tanyakan tentang:\n• Daftar Mobil\n• Harga Rental\n• Cara Pesan\n• Syarat & Ketentuan\n\nAtau ketik "Hubungi Admin" agar CS kami bisa langsung membantu Anda.';
 };
 
-// ── Helpers: Map data database ke format payload bahasa Inggris ──
-const mapConversation = (row) => {
-  if (!row) return null;
-  return {
-    id: row.id,
-    session_id: row.session_id,
-    sessionId: row.session_id,
-    user_id: row.pengguna_id,
-    userId: row.pengguna_id,
-    status: row.status === 'aktif' ? 'active' : 'closed',
-    admin_mode: row.admin_mode,
-    adminMode: Boolean(row.admin_mode),
-    unread_count: row.jumlah_belum_dibaca,
-    unreadCount: row.jumlah_belum_dibaca,
-    last_message_at: row.pesan_terakhir_pada,
-    lastMessageAt: row.pesan_terakhir_pada,
-    created_at: row.dibuat_pada,
-    createdAt: row.dibuat_pada,
-    user_name: row.user_name,
-    user_email: row.user_email,
-    user_avatar: row.user_avatar,
-    last_message: row.last_message,
-  };
-};
+// Map output
+const mapConversation = (row) => ({
+  id: row.id,
+  user_id: row.pengguna_id,
+  user_name: row.nama_pengguna || 'User',
+  user_email: row.email_pengguna || '',
+  status: row.status === 'aktif' ? 'active' : 'closed',
+  admin_mode: row.admin_mode === 1,
+  unread_count: row.jumlah_belum_dibaca || 0,
+  unreadCount: row.jumlah_belum_dibaca || 0, // Fallback untuk frontend
+  last_message: row.isi_pesan_terakhir || '',
+  last_message_at: row.pesan_terakhir_pada,
+  last_message_sender: row.peran_pengirim_terakhir || 'user',
+  created_at: row.dibuat_pada,
+  session_id: row.session_id || ''
+});
 
-const mapMessage = (row) => {
-  if (!row) return null;
-  return {
-    id: row.id,
-    session_id: row.session_id,
-    sessionId: row.session_id,
-    conversation_id: row.percakapan_id,
-    conversationId: row.percakapan_id,
-    sender_role: row.peran_pengirim,
-    senderRole: row.peran_pengirim,
-    role: row.peran_pengirim,
-    sender_name: row.nama_pengirim,
-    senderName: row.nama_pengirim,
-    content: row.isi_pesan,
-    is_read: row.sudah_dibaca,
-    isRead: Boolean(row.sudah_dibaca),
-    created_at: row.dibuat_pada,
-    createdAt: row.dibuat_pada,
-  };
-};
+const mapMessage = (row) => ({
+  id: row.id,
+  conversation_id: row.percakapan_id,
+  sender_role: row.peran_pengirim,
+  senderRole: row.peran_pengirim, // Fallback
+  role: row.peran_pengirim,       // Used by ChatbotWidget filtering
+  sender_name: row.nama_pengirim,
+  senderName: row.nama_pengirim,
+  content: row.isi_pesan,
+  is_read: row.sudah_dibaca === 1,
+  created_at: row.dibuat_pada,
+  timestamp: row.dibuat_pada,     // Used by ChatMessage
+});
 
-// ── GET /api/chat/history — Ambil history conversation ──
-router.get('/history', authenticate, async (req, res) => {
+// ── GET /api/chat/conversations ──
+router.get('/conversations', authenticate, adminOnly, async (req, res) => {
   try {
-    const [conversations] = await pool.query(`
-      SELECT c.*,
-             (SELECT isi_pesan FROM chat_pesan WHERE percakapan_id = c.id ORDER BY dibuat_pada DESC LIMIT 1) AS last_message
+    const [rows] = await pool.query(`
+      SELECT 
+        c.*, 
+        u.nama AS nama_pengguna, 
+        u.email AS email_pengguna,
+        (
+          SELECT isi_pesan 
+          FROM chat_pesan 
+          WHERE percakapan_id = c.id 
+          ORDER BY dibuat_pada DESC, id DESC LIMIT 1
+        ) AS isi_pesan_terakhir,
+        (
+          SELECT peran_pengirim 
+          FROM chat_pesan 
+          WHERE percakapan_id = c.id 
+          ORDER BY dibuat_pada DESC, id DESC LIMIT 1
+        ) AS peran_pengirim_terakhir
       FROM chat_percakapan c
-      WHERE c.pengguna_id = ?
-      ORDER BY c.dibuat_pada DESC
-    `, [req.user.id]);
-
-    res.json({ success: true, data: conversations.map(mapConversation), total: conversations.length });
+      LEFT JOIN pengguna u ON c.pengguna_id = u.id
+      ORDER BY c.pesan_terakhir_pada DESC, c.id DESC
+    `);
+    res.json({ success: true, data: rows.map(mapConversation) });
   } catch (err) {
-    console.error('[CHAT API ERROR] GET /history', err);
+    console.error('[CHAT API ERROR] GET /conversations', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ── POST /api/chat — Buat atau ambil conversation aktif ───
+  // 🟢 GET /api/chat/history 🟢
+  router.get('/history', authenticate, async (req, res) => {
+    try {
+      const [rows] = await pool.query(`
+        SELECT c.id, c.session_id, c.dibuat_pada as createdAt,
+               (SELECT isi_pesan FROM chat_pesan WHERE percakapan_id = c.id ORDER BY dibuat_pada DESC, id DESC LIMIT 1) as last_message
+        FROM chat_percakapan c
+        WHERE c.pengguna_id = ?
+        ORDER BY c.dibuat_pada DESC
+      `, [req.user.id]);
+      res.json({ success: true, data: rows });
+    } catch (err) {
+      console.error('[CHAT API ERROR] GET /history', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+// ── POST /api/chat ──
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { forceNew } = req.body || {};
+    const [[existing]] = await pool.query(
+      "SELECT * FROM chat_percakapan WHERE pengguna_id = ? AND status = 'aktif' ORDER BY dibuat_pada DESC, id DESC LIMIT 1",
+      [req.user.id]
+    );
 
-    let existing = [];
-    if (!forceNew) {
-      // Cek apakah user sudah punya conversation aktif
-      const [rows] = await pool.query(
-        'SELECT * FROM chat_percakapan WHERE pengguna_id = ? AND status = ? ORDER BY dibuat_pada DESC LIMIT 1',
-        [req.user.id, 'aktif']
-      );
-      existing = rows;
-    }
+    let conversationId;
+    let sessionId;
 
-    let conversation;
-
-    if (existing.length > 0) {
-      // Sudah ada conversation aktif, ambil beserta pesan-pesannya
-      conversation = mapConversation(existing[0]);
-      const [messages] = await pool.query(
-        'SELECT * FROM chat_pesan WHERE percakapan_id = ? ORDER BY dibuat_pada ASC',
-        [conversation.id]
-      );
-      return res.json({
-        success: true,
-        data: { ...conversation, messages: messages.map(mapMessage) },
-        message: 'Conversation aktif ditemukan.',
-      });
-    }
-
-    // Buat conversation baru
-    const sessionId = `CHAT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    if (existing) {
+      conversationId = existing.id;
+      sessionId = existing.session_id;
+    } else {
+      sessionId = 'session_' + Math.random().toString(36).substring(2, 9);
       const [result] = await pool.query(
-        `INSERT INTO chat_percakapan (pengguna_id, session_id, status, pesan_terakhir_pada, dibuat_pada)
-         VALUES (?, ?, 'aktif', ?, ?)`,
-        [req.user.id, sessionId, new Date(), new Date()]
+        "INSERT INTO chat_percakapan (pengguna_id, status, jumlah_belum_dibaca, session_id, admin_mode) VALUES (?, 'aktif', 0, ?, 0)",
+        [req.user.id, sessionId]
       );
-    const conversationId = result.insertId;
+      conversationId = result.insertId;
 
-    // Masukkan pesan pembuka otomatis dari bot
-    await pool.query(
-        `INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca, dibuat_pada)
-         VALUES (?, ?, 'bot', 'AsistenBot', ?, 1, ?)`,
-        [conversationId, sessionId, WELCOME_MESSAGE, new Date()]
-    );
+      await pool.query(
+        "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'bot', 'Customer Service', ?, 1)",
+        [conversationId, sessionId, WELCOME_MESSAGE]
+      );
+    }
 
-    // Ambil data conversation yang baru dibuat
-    const [[newConvRow]] = await pool.query(
-      'SELECT * FROM chat_percakapan WHERE id = ?',
-      [conversationId]
-    );
-    const newConv = mapConversation(newConvRow);
-    const [messages] = await pool.query(
-      'SELECT * FROM chat_pesan WHERE percakapan_id = ? ORDER BY dibuat_pada ASC',
-      [conversationId]
-    );
+    const [[conversationRow]] = await pool.query('SELECT * FROM chat_percakapan WHERE id = ?', [conversationId]);
+    const [messagesRows] = await pool.query('SELECT * FROM chat_pesan WHERE percakapan_id = ? ORDER BY dibuat_pada ASC, id ASC', [conversationId]);
 
-    res.status(201).json({
+    res.json({
       success: true,
-      data: { ...newConv, messages: messages.map(mapMessage) },
-      message: 'Conversation baru berhasil dibuat.',
+      data: {
+        conversation: mapConversation(conversationRow),
+        messages: messagesRows.map(mapMessage),
+      }
     });
   } catch (err) {
     console.error('[CHAT API ERROR] POST /', err);
@@ -418,48 +262,17 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-// ── GET /api/chat/conversations — Semua conversation (admin)
-// ⚠️ Harus didaftarkan SEBELUM route /:id agar tidak tertangkap sebagai param
-router.get('/conversations', authenticate, adminOnly, async (req, res) => {
-  try {
-    const [conversations] = await pool.query(`
-      SELECT c.*, u.nama AS user_name, u.email AS user_email, u.avatar AS user_avatar,
-             (SELECT isi_pesan FROM chat_pesan WHERE percakapan_id = c.id ORDER BY dibuat_pada DESC LIMIT 1) AS last_message
-      FROM chat_percakapan c
-      JOIN pengguna u ON u.id = c.pengguna_id
-      ORDER BY c.pesan_terakhir_pada DESC
-    `);
-
-    res.json({ success: true, data: conversations.map(mapConversation), total: conversations.length });
-  } catch (err) {
-    console.error('[CHAT API ERROR] GET /conversations', err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// ── GET /api/chat/:id/messages — Ambil pesan conversation ─
+// ── GET /api/chat/:id/messages ──
 router.get('/:id/messages', authenticate, async (req, res) => {
   try {
-    // Ambil conversation & verifikasi akses
-    const [[row]] = await pool.query(
-      'SELECT * FROM chat_percakapan WHERE id = ?',
-      [req.params.id]
-    );
-    const conversation = mapConversation(row);
-    if (!conversation) {
-      return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
-    }
+    const [[conversation]] = await pool.query('SELECT * FROM chat_percakapan WHERE id = ?', [req.params.id]);
+    if (!conversation) return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
 
-    // Pastikan user pemilik conversation atau admin
-    if (req.user.role !== 'admin' && conversation.userId !== req.user.id) {
+    if (req.user.role !== 'admin' && conversation.pengguna_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Akses ditolak.' });
     }
 
-    const [messages] = await pool.query(
-      'SELECT * FROM chat_pesan WHERE percakapan_id = ? ORDER BY dibuat_pada ASC',
-      [req.params.id]
-    );
-
+    const [messages] = await pool.query('SELECT * FROM chat_pesan WHERE percakapan_id = ? ORDER BY dibuat_pada ASC, id ASC', [req.params.id]);
     res.json({ success: true, data: messages.map(mapMessage) });
   } catch (err) {
     console.error('[CHAT API ERROR] GET /:id/messages', err);
@@ -467,203 +280,122 @@ router.get('/:id/messages', authenticate, async (req, res) => {
   }
 });
 
-// ── POST /api/chat/:id/messages — Kirim pesan ke conversation
+// ── POST /api/chat/:id/messages ──
 router.post('/:id/messages', authenticate, async (req, res) => {
   try {
     const { content, senderRole } = req.body;
+    if (!content) return res.status(400).json({ success: false, message: 'Pesan tidak boleh kosong.' });
 
-    if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, message: 'Isi pesan tidak boleh kosong.' });
-    }
+    const [[conversation]] = await pool.query('SELECT * FROM chat_percakapan WHERE id = ?', [req.params.id]);
+    if (!conversation) return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
 
-    // Validasi senderRole
-    if (!['user', 'admin'].includes(senderRole)) {
-      return res.status(400).json({ success: false, message: 'Role pengirim tidak valid.' });
-    }
-
-    // Verifikasi conversation ada dan aktif
-    const [[row]] = await pool.query(
-      'SELECT * FROM chat_percakapan WHERE id = ?',
-      [req.params.id]
-    );
-    const conversation = mapConversation(row);
-    if (!conversation) {
-      return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
-    }
-
-    if (row.status !== 'aktif') {
-      return res.status(400).json({ success: false, message: 'Conversation sudah ditutup. Silakan mulai percakapan baru.' });
-    }
-
-    // Pastikan user pemilik conversation atau admin
-    if (req.user.role !== 'admin' && conversation.userId !== req.user.id) {
+    if (req.user.role !== 'admin' && conversation.pengguna_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Akses ditolak.' });
     }
 
+    const now = new Date();
     const resultMessages = [];
 
     if (senderRole === 'user') {
-      // ── Simpan pesan user ────────────────────────────────
+      // 1. Simpan pesan user
       const [userResult] = await pool.query(
-        `INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca, dibuat_pada)
-         VALUES (?, ?, 'user', ?, ?, 0, ?)`,
-        [req.params.id, conversation.session_id, req.user.name || '', content.trim(), new Date()]
+        "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'user', ?, ?, 0)",
+        [req.params.id, conversation.session_id, req.user.name || '', content.trim()]
       );
       const [[userMsgRow]] = await pool.query('SELECT * FROM chat_pesan WHERE id = ?', [userResult.insertId]);
       resultMessages.push(mapMessage(userMsgRow));
 
-      // Jika admin_mode tidak aktif, bot merespon
-      if (!conversation.adminMode) {
-        const botResultData = await getBotResponse(content);
-        if (botResultData) {
-          if (botResultData.setAdminMode) {
-            await pool.query('UPDATE chat_percakapan SET admin_mode = 1 WHERE id = ?', [req.params.id]);
-          }
-          const [botResult] = await pool.query(
-            `INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca, dibuat_pada)
-             VALUES (?, ?, 'bot', 'AsistenBot', ?, 0, ?)`,
-            [req.params.id, conversation.session_id, botResultData.response, new Date()]
-          );
-          const [[botMsgRow]] = await pool.query('SELECT * FROM chat_pesan WHERE id = ?', [botResult.insertId]);
-          const botMsgObj = mapMessage(botMsgRow);
-          if (botResultData.suggestions) {
-            botMsgObj.suggestions = botResultData.suggestions;
-          }
-          resultMessages.push(botMsgObj);
+      // 2. Balasan otomatis (jika belum admin mode)
+      if (conversation.admin_mode === 0) {
+        const botAnswer = await getBotResponse(content);
+        const [botResult] = await pool.query(
+          "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'bot', 'Customer Service', ?, 1)",
+          [req.params.id, conversation.session_id, botAnswer]
+        );
+        const [[botMsgRow]] = await pool.query('SELECT * FROM chat_pesan WHERE id = ?', [botResult.insertId]);
+        resultMessages.push(mapMessage(botMsgRow));
+
+        // Jika user minta admin, set admin mode
+        if (/hubungi admin|kontak admin|chat admin|customer service/.test(normalizeText(content))) {
+          await pool.query('UPDATE chat_percakapan SET admin_mode = 1 WHERE id = ?', [req.params.id]);
         }
       }
 
-      // Update pesan_terakhir_pada & increment jumlah_belum_dibaca (untuk admin)
+      // Update percakapan (user)
       await pool.query(
         'UPDATE chat_percakapan SET pesan_terakhir_pada = ?, jumlah_belum_dibaca = jumlah_belum_dibaca + 1 WHERE id = ?',
-        [new Date(), req.params.id]
+        [now, req.params.id]
       );
-    } else if (senderRole === 'admin') {
-      // ── Simpan pesan admin ───────────────────────────────
+    } else {
+      // 1. Simpan pesan admin
       const [adminResult] = await pool.query(
-        `INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca, dibuat_pada)
-         VALUES (?, ?, 'admin', ?, ?, 1, ?)`,
-        [req.params.id, conversation.session_id, req.user.name || 'Admin', content.trim(), new Date()]
+        "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'admin', ?, ?, 1)",
+        [req.params.id, conversation.session_id, req.user.name || 'Admin', content.trim()]
       );
       const [[adminMsgRow]] = await pool.query('SELECT * FROM chat_pesan WHERE id = ?', [adminResult.insertId]);
       resultMessages.push(mapMessage(adminMsgRow));
 
-      // Update pesan_terakhir_pada & reset jumlah_belum_dibaca (admin sudah baca), and set admin_mode = 1
+      // 2. Update admin_mode jika dibalas admin
+      if (conversation.admin_mode === 0) {
+        await pool.query('UPDATE chat_percakapan SET admin_mode = 1 WHERE id = ?', [req.params.id]);
+      }
+
+      // Update percakapan (admin membaca & membalas)
       await pool.query(
-        'UPDATE chat_percakapan SET pesan_terakhir_pada = ?, jumlah_belum_dibaca = 0, admin_mode = 1 WHERE id = ?',
-        [new Date(), req.params.id]
+        'UPDATE chat_percakapan SET pesan_terakhir_pada = ?, jumlah_belum_dibaca = 0 WHERE id = ?',
+        [now, req.params.id]
       );
     }
 
-    res.status(201).json({
-      success: true,
-      data: resultMessages,
-      message: 'Pesan berhasil dikirim.',
-    });
+    res.status(201).json({ success: true, data: resultMessages, message: 'Pesan terkirim.' });
   } catch (err) {
     console.error('[CHAT API ERROR] POST /:id/messages', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ── PATCH /api/chat/:id/read — Tandai sudah dibaca (admin) ─
+// ── PATCH /api/chat/:id/read ──
 router.patch('/:id/read', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[row]] = await pool.query(
-      'SELECT id FROM chat_percakapan WHERE id = ?',
-      [req.params.id]
-    );
-    if (!row) {
-      return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
-    }
-
-    // Tandai semua pesan user sebagai sudah dibaca
-    await pool.query(
-      "UPDATE chat_pesan SET sudah_dibaca = 1 WHERE percakapan_id = ? AND peran_pengirim = 'user'",
-      [req.params.id]
-    );
-
-    // Reset jumlah_belum_dibaca pada conversation
-    await pool.query(
-      'UPDATE chat_percakapan SET jumlah_belum_dibaca = 0 WHERE id = ?',
-      [req.params.id]
-    );
-
-    res.json({ success: true, message: 'Semua pesan ditandai sudah dibaca.' });
+    await pool.query("UPDATE chat_pesan SET sudah_dibaca = 1 WHERE percakapan_id = ? AND peran_pengirim = 'user'", [req.params.id]);
+    await pool.query('UPDATE chat_percakapan SET jumlah_belum_dibaca = 0 WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Ditandai sudah dibaca.' });
   } catch (err) {
-    console.error('[CHAT API ERROR] PATCH /:id/read', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ── PATCH /api/chat/:id/close — Tutup conversation (user atau admin) ─
+// ── PATCH /api/chat/:id/close ──
 router.patch('/:id/close', authenticate, async (req, res) => {
   try {
-    const [[row]] = await pool.query(
-      'SELECT * FROM chat_percakapan WHERE id = ?',
-      [req.params.id]
-    );
-    if (!row) {
-      return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
-    }
-
-    if (req.user.role !== 'admin' && row.pengguna_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Akses ditolak.' });
-    }
-
-    await pool.query(
-      "UPDATE chat_percakapan SET status = 'ditutup', jumlah_belum_dibaca = 0 WHERE id = ?",
-      [req.params.id]
-    );
-
-    res.json({ success: true, message: 'Conversation berhasil ditutup.' });
+    await pool.query("UPDATE chat_percakapan SET status = 'ditutup', jumlah_belum_dibaca = 0 WHERE id = ?", [req.params.id]);
+    res.json({ success: true, message: 'Ditutup.' });
   } catch (err) {
-    console.error('[CHAT API ERROR] PATCH /:id/close', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ── DELETE /api/chat/:id — Hapus conversation (admin) ─
-router.delete('/:id', authenticate, adminOnly, async (req, res) => {
-  try {
-    const [[row]] = await pool.query(
-      'SELECT id FROM chat_percakapan WHERE id = ?',
-      [req.params.id]
-    );
-    if (!row) {
-      return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
-    }
-
-    await pool.query('DELETE FROM chat_percakapan WHERE id = ?', [req.params.id]);
-
-    res.json({ success: true, message: 'Percakapan berhasil dihapus.' });
-  } catch (err) {
-    console.error('[CHAT API ERROR] DELETE /:id', err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// ── PATCH /api/chat/:id/reopen — Buka kembali conversation ─
+// ── PATCH /api/chat/:id/reopen ──
 router.patch('/:id/reopen', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[row]] = await pool.query(
-      'SELECT id, status FROM chat_percakapan WHERE id = ?',
-      [req.params.id]
-    );
-    if (!row) {
-      return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
-    }
-
-    await pool.query(
-      "UPDATE chat_percakapan SET status = 'aktif' WHERE id = ?",
-      [req.params.id]
-    );
-
-    res.json({ success: true, message: 'Conversation berhasil dibuka kembali.' });
+    await pool.query("UPDATE chat_percakapan SET status = 'aktif', admin_mode = 0 WHERE id = ?", [req.params.id]);
+    res.json({ success: true, message: 'Dibuka kembali.' });
   } catch (err) {
-    console.error('[CHAT API ERROR] PATCH /:id/reopen', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+  // 🟢 DELETE /api/chat/:id 🟢
+  router.delete('/:id', authenticate, adminOnly, async (req, res) => {
+    try {
+      const [[conversation]] = await pool.query('SELECT * FROM chat_percakapan WHERE id = ?', [req.params.id]);
+      if (!conversation) return res.status(404).json({ success: false, message: 'Conversation tidak ditemukan.' });
+
+      await pool.query('DELETE FROM chat_percakapan WHERE id = ?', [req.params.id]);
+      res.json({ success: true, message: 'Percakapan berhasil dihapus.' });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
 
 module.exports = router;

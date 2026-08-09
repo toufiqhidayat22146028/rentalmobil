@@ -19,9 +19,9 @@ export default {
           400: '#94a3b8',  // Slate 400
           500: '#2563eb',  // Royal Blue (Aksen Utama untuk Link/Aktif)
           600: '#1d4ed8',  // Royal Blue Hover
-          700: '#1e293b',  // Slate 800 (Warna gelap tombol/teks)
-          800: '#0f172a',  // Slate 900 (Warna utama gelap premium)
-          900: '#020617',  // Slate 950 (Hitam Obsidian)
+          700: '#0369a1',  // Sky Blue 700 (Warna gelap tombol/teks)
+          800: '#0284c7',  // Sky Blue 600 (Warna utama gelap premium)
+          900: '#0ea5e9',  // Sky Blue 500 (Hitam Obsidian)
           950: '#000000',  // Hitam Murni
         },
         // Alias pendek untuk kemudahan penggunaan (dipetakan ke skema warna baru agar kompatibel)

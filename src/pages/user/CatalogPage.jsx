@@ -134,7 +134,7 @@ const CatalogPage = () => {
 
       <div className="flex gap-6">
         {/* Filter Sidebar - Desktop */}
-        <aside className="hidden lg:block w-64 flex-shrink-0">
+        <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-20 h-[calc(100vh-6rem)] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 pr-2">
           <CarFilter filters={filters} onChange={handleFilterChange} onReset={handleReset} activeCount={activeFilterCount} />
         </aside>
 

@@ -2,16 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Search, 
-  MapPin, 
   Car, 
   ShieldCheck, 
   Clock, 
-  HelpCircle, 
   Check, 
   ChevronRight,
   ArrowRight,
-  Sparkles,
-  Loader2
+  Loader2,
+  MessageCircle
 } from 'lucide-react';
 import { carsAPI } from '../../services/api';
 import CarCard from '../../components/car/CarCard';
@@ -80,13 +78,13 @@ const HomePage = () => {
       
       {/* Toast Notifikasi Subscribe */}
       {showSubscribeToast && (
-        <div className="fixed top-20 right-6 z-[99] bg-slate-900 border border-slate-800 text-white rounded-2xl p-4 shadow-2xl flex items-center gap-3 animate-slide-up">
+        <div className="fixed top-20 right-6 z-[99] bg-white border border-gray-200 text-slate-900 rounded-2xl p-4 shadow-2xl flex items-center gap-3 animate-slide-up">
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Check className="w-5 h-5 text-white" />
+            <Check className="w-5 h-5 text-slate-900" />
           </div>
           <div>
             <p className="font-extrabold text-sm">Berlangganan Berhasil!</p>
-            <p className="text-xs text-slate-400">Promo spesial Anda akan dikirimkan ke email.</p>
+            <p className="text-xs text-slate-600">Promo spesial Anda akan dikirimkan ke email.</p>
           </div>
         </div>
       )}
@@ -94,7 +92,7 @@ const HomePage = () => {
       {/* =======================================================================
           1. HERO SECTION (BANNER UTAMA DENGAN SEARCH WIDGET)
           ======================================================================= */}
-      <header className="relative bg-slate-950 overflow-hidden pt-12 pb-20 lg:py-32">
+      <header className="relative bg-slate-50 overflow-hidden pt-12 pb-20 lg:py-32">
         {/* Lingkaran Pendar Latar Belakang */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-10 w-[300px] h-[300px] bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
@@ -105,42 +103,59 @@ const HomePage = () => {
             {/* Kolom Kiri: Teks & Headline */}
             <div className="lg:col-span-7 text-center lg:text-left space-y-6">
               <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-1.5 rounded-full text-blue-400 text-xs font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                Layanan Rental Mobil No. 1 di Indonesia
+                <Check className="w-3.5 h-3.5" />
+                Layanan Sewa Mobil Terpercaya
               </div>
-              <h1 className="font-display font-black text-white text-4xl sm:text-5xl lg:text-6xl leading-[1.1] tracking-tight">
-                Temukan Perjalanan Terbaik Anda dengan <span className="text-blue-500">Armada Premium</span>
+              <h1 className="font-display font-black text-slate-900 text-4xl sm:text-5xl lg:text-6xl leading-[1.1] tracking-tight">
+                Sewa Mobil Impian Anda dengan <span className="text-blue-600">Mudah \& Cepat</span>
               </h1>
-              <p className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 font-medium">
+              <p className="text-slate-600 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 font-medium">
                 Sewa mobil impian Anda dengan harga terbaik, proses cepat kurang dari 5 menit, dan layanan pelanggan 24 jam penuh. Nyaman, aman, dan terpercaya.
               </p>
               
               {/* Fitur Singkat Elegan */}
-              <div className="flex flex-wrap justify-center lg:justify-start gap-6 pt-4 text-white text-xs font-bold uppercase tracking-wider">
+              <div className="flex flex-wrap justify-center lg:justify-start gap-6 pt-4 text-slate-900 text-xs font-bold uppercase tracking-wider">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white">✓</div>
+                  <div className="w-5 h-5 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
                   <span>Tanpa Biaya Tersembunyi</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white">✓</div>
+                  <div className="w-5 h-5 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
                   <span>Pembatalan Gratis</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white">✓</div>
+                  <div className="w-5 h-5 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
                   <span>Layanan Antar Rumah</span>
                 </div>
               </div>
             </div>
 
-            {/* Kolom Kanan: Visual Mobil Mewah */}
-            <div className="lg:col-span-5 relative flex justify-center items-center pointer-events-none select-none">
-              <div className="absolute w-[400px] h-[250px] bg-blue-600/20 rounded-full blur-[80px] -z-10" />
-              <img
-                src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80&auto=format&fit=crop"
-                alt="Premium Audi Sedan"
-                className="w-full max-w-[480px] lg:max-w-none object-contain filter drop-shadow-[0_25px_50px_rgba(0,0,0,0.7)] scale-110 animate-fade-in"
-              />
-            </div>
+              {/* Kolom Kanan: Visual Mobil Mewah */}
+              <div className="lg:col-span-5 relative flex justify-center items-center mt-10 lg:mt-0">
+                {/* Dekorasi Latar Belakang */}
+                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-600/30 to-cyan-400/30 rounded-[3rem] blur-2xl -z-10 transform -rotate-3" />
+                
+                {/* Kontainer Gambar Utama */}
+                <div className="relative w-full max-w-[480px] lg:max-w-none rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700/50 group">
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent z-10 pointer-events-none" />
+                  <img
+                    src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80&auto=format&fit=crop"
+                    alt="Premium Audi Sedan"
+                    className="w-full h-[300px] sm:h-[400px] object-cover transform transition-transform duration-700 group-hover:scale-105"
+                  />
+                  
+                  {/* Badge Mengambang */}
+                  <div className="absolute bottom-6 left-6 z-20 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-lg transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-inner">
+                      <Car className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-bold tracking-wide">Kualitas Premium</p>
+                      <p className="text-blue-200 text-xs">Siap Disewa Hari Ini</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
           </div>
 
@@ -156,9 +171,9 @@ const HomePage = () => {
             <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Input Pencarian Nama/Merek */}
               <div className="relative">
-                <label className="block text-[10px] font-extrabold uppercase text-slate-400 tracking-wider mb-2">Nama / Merek Mobil</label>
+                <label className="block text-[10px] font-extrabold uppercase text-slate-600 tracking-wider mb-2">Nama / Merek Mobil</label>
                 <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
                   <input
                     type="text"
                     placeholder="Contoh: Innova, Honda..."
@@ -171,7 +186,7 @@ const HomePage = () => {
 
               {/* Pilihan Kategori */}
               <div>
-                <label className="block text-[10px] font-extrabold uppercase text-slate-400 tracking-wider mb-2">Tipe Mobil</label>
+                <label className="block text-[10px] font-extrabold uppercase text-slate-600 tracking-wider mb-2">Tipe Mobil</label>
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
@@ -186,7 +201,7 @@ const HomePage = () => {
 
               {/* Pilihan Transmisi */}
               <div>
-                <label className="block text-[10px] font-extrabold uppercase text-slate-400 tracking-wider mb-2">Transmisi</label>
+                <label className="block text-[10px] font-extrabold uppercase text-slate-600 tracking-wider mb-2">Transmisi</label>
                 <select
                   value={selectedTransmission}
                   onChange={(e) => setSelectedTransmission(e.target.value)}
@@ -225,7 +240,7 @@ const HomePage = () => {
             <h2 className="font-display font-black text-slate-800 text-2xl sm:text-3xl tracking-tight">
               Mengapa Memilih Kami?
             </h2>
-            <p className="text-slate-400 text-sm font-medium">
+            <p className="text-slate-600 text-sm font-medium">
               Kami menawarkan layanan transportasi terbaik untuk menjamin kepuasan dan keselamatan Anda.
             </p>
           </div>
@@ -237,7 +252,7 @@ const HomePage = () => {
               <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
                 <Car className="w-6 h-6" />
               </div>
-              <h3 className="font-display font-extrabold text-slate-800 text-lg mb-3">Armada Prima & Bersih</h3>
+              <h3 className="font-display font-extrabold text-slate-800 text-lg mb-3">Mobil Prima & Bersih</h3>
               <p className="text-slate-500 text-sm leading-relaxed">
                 Semua unit kendaraan kami melewati inspeksi berkala yang ketat, dicuci bersih, dan disinfeksi sebelum diserahkan kepada Anda.
               </p>
@@ -279,10 +294,10 @@ const HomePage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-12">
             <div>
               <h2 className="font-display font-black text-slate-800 text-2xl sm:text-3xl tracking-tight">
-                Pilihan Armada Unggulan
+                Pilihan Mobil Unggulan
               </h2>
-              <p className="text-slate-400 text-sm font-medium mt-1">
-                Jelajahi armada terbaik kami yang siap dipinjam hari ini.
+              <p className="text-slate-600 text-sm font-medium mt-1">
+                Jelajahi mobil terbaik kami yang siap dipinjam hari ini.
               </p>
             </div>
             
@@ -290,7 +305,7 @@ const HomePage = () => {
               to="/katalog"
               className="inline-flex items-center gap-1 text-sm font-extrabold text-blue-600 hover:text-blue-700 transition-colors"
             >
-              Lihat Semua Armada
+              Lihat Semua Mobil
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -299,11 +314,11 @@ const HomePage = () => {
           {isLoadingCars ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-              <p className="text-slate-400 text-sm font-medium">Memuat armada pilihan...</p>
+              <p className="text-slate-600 text-sm font-medium">Memuat mobil pilihan...</p>
             </div>
           ) : featuredCars.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">
-              Tidak ada armada unggulan yang tersedia saat ini.
+            <div className="text-center py-12 text-slate-600 text-sm">
+              Tidak ada mobil unggulan yang tersedia saat ini.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -321,44 +336,30 @@ const HomePage = () => {
           ======================================================================= */}
       <section className="py-16 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative bg-slate-950 rounded-[2.5rem] p-8 sm:p-12 overflow-hidden shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8 group">
+          <div className="relative bg-slate-50 rounded-[2.5rem] p-8 sm:p-12 overflow-hidden shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8 group">
             
             {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-green-500/10 rounded-full blur-[80px] pointer-events-none" />
 
             <div className="max-w-md text-center md:text-left z-10">
-              <h2 className="text-white font-display font-black text-2xl sm:text-3xl leading-tight mb-3">
-                Dapatkan Penawaran Spesial Khusus Member!
+              <h2 className="text-slate-900 font-display font-black text-2xl sm:text-3xl leading-tight mb-3">
+                Butuh Bantuan Memilih Mobil?
               </h2>
-              <p className="text-slate-400 text-sm font-medium">
-                Berlangganan buletin kami untuk kode promo musiman dan info rilis armada terbaru kami.
+              <p className="text-slate-600 text-sm font-medium">
+                Jangan ragu! Hubungi admin kami sekarang untuk konsultasi gratis atau menanyakan ketersediaan mobil untuk perjalanan Anda.
               </p>
             </div>
 
-            <div className="w-full max-w-sm z-10">
-              {!isSubscribed ? (
-                <form onSubmit={handleSubscribeSubmit} className="flex gap-2">
-                  <input
-                    type="email"
-                    placeholder="Ketik email Anda..."
-                    value={subscribeEmail}
-                    onChange={(e) => setSubscribeEmail(e.target.value)}
-                    required
-                    className="flex-1 bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm px-6 py-3.5 rounded-xl transition-all duration-300 hover:shadow-lg active:scale-95 whitespace-nowrap"
-                  >
-                    Ikuti Promo
-                  </button>
-                </form>
-              ) : (
-                <div className="inline-flex w-full items-center justify-center md:justify-start gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl py-3 px-4 text-sm font-bold">
-                  <Check className="w-4.5 h-4.5 text-emerald-400" />
-                  Terima kasih! Email Anda telah terdaftar.
-                </div>
-              )}
+            <div className="w-full max-w-sm z-10 flex justify-center md:justify-end">
+              <a
+                href="https://wa.me/628566299954?text=Halo%20Admin%20Subulussalam%20Rent%20Car,%20saya%20ingin%20berkonsultasi%20seputar%20pilihan%20mobil."
+                target="_blank"
+                rel="noreferrer"
+                className="bg-green-500 hover:bg-green-600 text-white font-extrabold text-sm px-6 py-4 rounded-xl transition-all duration-300 hover:shadow-lg active:scale-95 whitespace-nowrap flex items-center justify-center gap-3 w-full sm:w-auto"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Chat Admin Sekarang
+              </a>
             </div>
 
           </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import { Car, Calendar, MapPin, UserCheck, CreditCard, CheckCircle, ArrowLeft, Shield } from 'lucide-react';
+import { Calendar, MapPin, UserCheck, CreditCard, CheckCircle, ArrowLeft, Shield, FileText } from 'lucide-react';
 import { MOCK_CARS } from '../../data/mockCars';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDate, calculateDays, getTodayString, getMinReturnDate } from '../../utils/dateHelper';
@@ -28,8 +28,14 @@ const BookingPage = () => {
   const [startDate, setStartDate]           = useState(stateData.startDate || '');
   const [endDate, setEndDate]               = useState(stateData.endDate || '');
   const [withDriver, setWithDriver]         = useState(stateData.withDriver || false);
+  const [usageArea, setUsageArea]           = useState(stateData.usageArea || 'dalam_kota');
   const [pickupLocation, setPickupLocation] = useState(PICKUP_OPTIONS[0]);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes]                   = useState('');
+  const [nik, setNik]                       = useState(user?.ktp || '');
+  const [sim, setSim]                       = useState(user?.sim || '');
+  const [phone, setPhone]                   = useState(user?.phone || '');
+  const [address, setAddress]               = useState(user?.address || '');
   const [isLoading, setIsLoading]           = useState(false);
   const [createdBookingId, setCreatedBookingId] = useState('');
   const [showPaymentGateway, setShowPaymentGateway] = useState(false);
@@ -69,8 +75,10 @@ const BookingPage = () => {
   const days        = calculateDays(startDate, endDate);
   const carCost     = days * pricePerDay;
   const driverCost  = withDriver ? days * driverCostPerDay : 0;
-  const totalCost   = carCost + driverCost;
-  const isValid     = startDate && endDate && days > 0;
+  const outOfTownCost = usageArea === 'luar_kota' ? days * 150000 : 0;
+  const totalCost   = carCost + driverCost + outOfTownCost;
+  const isDelivery  = pickupLocation === PICKUP_OPTIONS[1];
+  const isValid     = startDate && endDate && days > 0 && nik && phone && address && (withDriver || sim) && (!isDelivery || deliveryAddress.trim());
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,9 +86,12 @@ const BookingPage = () => {
     setIsLoading(true);
     setError('');
 
+    const finalPickupLocation = isDelivery ? `Antar ke Alamat: ${deliveryAddress}` : pickupLocation;
+
     const result = await addBooking({
       carId: car.id, startDate, endDate, days,
-      pickupLocation, withDriver, totalCost, notes,
+      pickupLocation: finalPickupLocation, withDriver, totalCost, notes,
+      nik, sim, phone, address, usageArea
     });
 
     setIsLoading(false);
@@ -178,6 +189,38 @@ const BookingPage = () => {
                     <span className="text-sm text-gray-700">{opt}</span>
                   </label>
                 ))}
+                
+                {isDelivery && (
+                  <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                    <label className="form-label">Alamat Pengantaran Mobil *</label>
+                    <textarea 
+                      value={deliveryAddress} 
+                      onChange={e => setDeliveryAddress(e.target.value)} 
+                      placeholder="Masukkan alamat lengkap tujuan pengantaran (misal: Hotel X, Jl. Y No.12)" 
+                      rows={2} 
+                      className="form-input resize-none" 
+                      required 
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button type="button" onClick={() => setDeliveryAddress(address)} className="text-xs text-primary-700 hover:underline">Sama dengan alamat domisili saya</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="card p-5">
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-blue-600" /> Area Pemakaian</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button type="button" onClick={() => setUsageArea('dalam_kota')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${usageArea === 'dalam_kota' ? 'border-primary-800 bg-primary-50' : 'border-gray-200 hover:border-primary-300'}`}>
+                    <p className="font-semibold text-sm text-gray-800">Dalam Kota</p>
+                    <p className="text-xs text-gray-500">Harga standar</p>
+                  </button>
+                  <button type="button" onClick={() => setUsageArea('luar_kota')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${usageArea === 'luar_kota' ? 'border-primary-800 bg-primary-50' : 'border-gray-200 hover:border-primary-300'}`}>
+                    <p className="font-semibold text-sm text-gray-800">Luar Kota</p>
+                    <p className="text-xs text-gray-500">+Rp 150.000/hari</p>
+                  </button>
+                </div>
               </div>
               <div className="card p-5">
                 <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><UserCheck className="w-5 h-5 text-blue-600" /> Opsi Sopir</h3>
@@ -192,7 +235,28 @@ const BookingPage = () => {
                 </div>
               </div>
               <div className="card p-5">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-blue-600" /> Catatan</h3>
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" /> Data Diri Pemesan</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="form-label">Nomor Induk Kependudukan (NIK) *</label>
+                    <input type="text" value={nik} onChange={e => setNik(e.target.value)} placeholder="Sesuai KTP" className="form-input" required />
+                  </div>
+                  <div>
+                    <label className="form-label">Nomor Telepon / WhatsApp *</label>
+                    <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="0812xxxx" className="form-input" required />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="form-label">Nomor SIM {withDriver ? '(Opsional)' : '*'}</label>
+                    <input type="text" value={sim} onChange={e => setSim(e.target.value)} placeholder="Wajib jika Anda mengemudi sendiri" className="form-input" required={!withDriver} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="form-label">Alamat Domisili Lengkap *</label>
+                    <textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="Sesuai tempat tinggal saat ini" rows={2} className="form-input resize-none" required />
+                  </div>
+                </div>
+              </div>
+              <div className="card p-5">
+                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><CreditCard className="w-5 h-5 text-blue-600" /> Catatan Tambahan</h3>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Contoh: butuh kursi bayi, dll." rows={3} className="form-input resize-none" />
               </div>
             </div>
@@ -208,9 +272,10 @@ const BookingPage = () => {
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between text-gray-600"><span>Biaya Mobil</span><span>{days > 0 ? formatCurrency(carCost) : '-'}</span></div>
                   {withDriver && days > 0 && <div className="flex justify-between text-gray-600"><span>Biaya Sopir</span><span>{formatCurrency(driverCost)}</span></div>}
+                  {outOfTownCost > 0 && <div className="flex justify-between text-gray-600"><span>Biaya Luar Kota</span><span>{formatCurrency(outOfTownCost)}</span></div>}
                   <hr />
-                  <div className="flex justify-between font-bold text-gray-800 text-base pt-1">
-                    <span>Total</span>
+                  <div className="flex justify-between font-bold text-gray-800 text-base pt-3 border-t">
+                    <span>Total Pembayaran</span>
                     <span className="text-primary-800">{days > 0 ? formatCurrency(totalCost) : '-'}</span>
                   </div>
                 </div>

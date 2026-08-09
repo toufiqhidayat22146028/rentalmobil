@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Car, Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, ShieldCheck, Clock, ThumbsUp } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
@@ -41,17 +41,25 @@ const LoginPage = () => {
           <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-primary-400/10 rounded-full blur-3xl" />
         </div>
         <div className="relative text-center">
-          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/30">
-            <Car className="w-10 h-10 text-white" />
+          <div className="w-48 h-48 sm:w-64 sm:h-64 mx-auto mb-8 bg-white rounded-[2rem] p-4 shadow-2xl flex items-center justify-center overflow-hidden">
+            <img src="/logo-new.jpg" alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <h2 className="text-3xl font-display font-bold text-white mb-3 uppercase">Subulussalam Rent Car</h2>
-          <p className="text-primary-200 text-lg leading-relaxed max-w-sm">
-            Solusi terpercaya untuk kebutuhan transportasi Anda. Ribuan pelanggan sudah mempercayai kami.
+          <p className="text-primary-200 text-lg leading-relaxed max-w-sm mx-auto">
+            Solusi transportasi andalan Anda. Aman, nyaman, dan terpercaya.
           </p>
-          <div className="mt-10 grid grid-cols-3 gap-6 text-center">
-            {[['500+', 'Armada'], ['10K+', 'Pelanggan'], ['4.9', 'Rating']].map(([v, l]) => (
-              <div key={l}><p className="text-2xl font-bold text-white">{v}</p><p className="text-primary-300 text-sm">{l}</p></div>
-            ))}
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+              <ShieldCheck className="w-8 h-8 text-green-400 mx-auto mb-2" />
+              <p className="text-white font-medium text-sm">Aman & Nyaman</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+              <Clock className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+              <p className="text-white font-medium text-sm">Proses Cepat</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+              <ThumbsUp className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+              <p className="text-white font-medium text-sm">Terpercaya</p>
+            </div>
           </div>
         </div>
       </div>
@@ -61,7 +69,7 @@ const LoginPage = () => {
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
             <div className="w-64 h-20 overflow-hidden flex items-center justify-center p-0.5">
-              <img src="/logo-light.svg?v=3" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+              <img src="/logo-new.jpg" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
             </div>
           </div>
 

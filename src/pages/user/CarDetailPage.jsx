@@ -15,19 +15,27 @@ const CarDetailPage = () => {
   const { isLoggedIn } = useAuth();
 
   const [car, setCar] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [withDriver, setWithDriver] = useState(false);
+  const [usageArea, setUsageArea] = useState('dalam_kota');
 
   useEffect(() => {
     const fetchCarDetail = async () => {
       setIsLoading(true);
       try {
-        const res = await carsAPI.getById(id);
+        const [res, reviewsRes] = await Promise.all([
+          carsAPI.getById(id),
+          fetch(`http://localhost:5001/api/cars/${id}/reviews`).then(r => r.json())
+        ]);
         if (res.data.success) {
           setCar(res.data.data);
+        }
+        if (reviewsRes.success) {
+          setReviews(reviewsRes.data);
         }
       } catch (err) {
         console.error('[CarDetail] Gagal memuat detail mobil:', err);
@@ -61,18 +69,19 @@ const CarDetailPage = () => {
     );
   }
 
-  const days = calculateDays(startDate, endDate);
-  const carCost = days * car.pricePerDay;
-  const driverCost = withDriver ? days * car.driverCostPerDay : 0;
-  const totalCost = carCost + driverCost;
+  const days = startDate && endDate ? calculateDays(startDate, endDate) : 0;
+  const carCost = days > 0 ? car?.pricePerDay * days : 0;
+  const driverCost = withDriver && days > 0 ? car?.driverCostPerDay * days : 0;
+  const outOfTownCost = usageArea === 'luar_kota' && days > 0 ? 150000 * days : 0;
+  const totalCost = carCost + driverCost + outOfTownCost;
 
   const handleBooking = () => {
     if (!isLoggedIn) {
-      navigate('/login', { state: { from: `/mobil/${id}` } });
+      navigate('/login');
       return;
     }
-    navigate(`/peminjaman/${id}`, {
-      state: { startDate, endDate, withDriver, days, totalCost },
+    navigate(`/peminjaman/${car.id}`, { 
+      state: { car, startDate, endDate, days, withDriver, totalCost, usageArea } 
     });
   };
 
@@ -163,34 +172,83 @@ const CarDetailPage = () => {
             {/* Deskripsi */}
             <div>
               <h3 className="font-semibold text-gray-800 mb-2">Deskripsi</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{car.description}</p>
+              {car.description ? (
+                <p className="text-gray-600 text-sm leading-relaxed">{car.description}</p>
+              ) : (
+                <p className="text-sm text-gray-400 italic">Belum ada deskripsi untuk mobil ini.</p>
+              )}
             </div>
           </div>
 
           {/* Fitur Kendaraan */}
           <div className="card p-6">
             <h3 className="font-semibold text-gray-800 mb-4">Fitur & Fasilitas</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {car.features.map((f) => (
-                <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                  <CheckCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                  {f}
-                </div>
-              ))}
-            </div>
+            {car.features && car.features.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {car.features.map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">Belum ada informasi fitur ditambahkan.</p>
+            )}
           </div>
 
           {/* Spesifikasi Teknis */}
           <div className="card p-6">
             <h3 className="font-semibold text-gray-800 mb-4">Spesifikasi Teknis</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {car.specs && Object.entries(car.specs).map(([k, v], idx) => (
-                <div key={`${k}-${idx}`} className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-400 capitalize">{k}</p>
-                  <p className="text-sm font-semibold text-gray-700">{v}</p>
-                </div>
-              ))}
-            </div>
+            {car.specs && Object.keys(car.specs).length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {Object.entries(car.specs).map(([k, v], idx) => (
+                  <div key={`${k}-${idx}`} className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 capitalize">{k}</p>
+                    <p className="text-sm font-semibold text-gray-700">{v}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">Belum ada informasi spesifikasi teknis ditambahkan.</p>
+            )}
+          </div>
+
+          {/* Ulasan Pelanggan */}
+          <div className="card p-6">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+              Ulasan Pelanggan ({reviews.length})
+            </h3>
+            {reviews.length > 0 ? (
+              <div className="space-y-4">
+                {reviews.map((r) => (
+                  <div key={r.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold uppercase">
+                          {r.userName?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{r.userName}</p>
+                          <p className="text-xs text-gray-400">{new Date(r.dibuat_pada).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star key={star} className={`w-3.5 h-3.5 ${star <= r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    {r.komentar && (
+                      <p className="text-sm text-gray-600 mt-2 italic">"{r.komentar}"</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">Belum ada ulasan untuk mobil ini.</p>
+            )}
           </div>
         </div>
 
@@ -258,6 +316,33 @@ const CarDetailPage = () => {
               </div>
             </div>
 
+            {/* Area Pemakaian */}
+            <div className="mb-5">
+              <label className="form-label flex items-center gap-2 mb-3">
+                <MapPin className="w-4 h-4 text-primary-700" /> Area Pemakaian
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setUsageArea('dalam_kota')}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    usageArea === 'dalam_kota' ? 'border-primary-800 bg-primary-50' : 'border-gray-200 hover:border-primary-300'
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-gray-700">Dalam Kota</p>
+                  <p className="text-xs text-gray-400">Harga Normal</p>
+                </button>
+                <button
+                  onClick={() => setUsageArea('luar_kota')}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    usageArea === 'luar_kota' ? 'border-primary-800 bg-primary-50' : 'border-gray-200 hover:border-primary-300'
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-gray-700">Luar Kota</p>
+                  <p className="text-xs text-gray-400">+Rp 150.000/hari</p>
+                </button>
+              </div>
+            </div>
+
             {/* Kalkulasi Biaya */}
             {days > 0 && (
               <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
@@ -269,6 +354,12 @@ const CarDetailPage = () => {
                   <div className="flex justify-between text-gray-600">
                     <span>Sopir × {days} hari</span>
                     <span>{formatCurrency(driverCost)}</span>
+                  </div>
+                )}
+                {usageArea === 'luar_kota' && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Biaya Luar Kota × {days} hari</span>
+                    <span>{formatCurrency(outOfTownCost)}</span>
                   </div>
                 )}
                 <hr className="border-gray-200" />

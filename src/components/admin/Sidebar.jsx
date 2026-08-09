@@ -120,7 +120,7 @@ const Sidebar = () => {
       <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-48 h-16 overflow-hidden flex items-center justify-start p-0.5">
-            <img src="/logo-light.svg?v=3" alt="Logo" className="w-full h-full object-contain object-left" onError={(e) => { e.target.style.display = 'none'; }} />
+            <img src="/logo-new.jpg" alt="Logo" className="w-full h-full object-contain object-left" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
         </div>
       </div>

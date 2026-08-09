@@ -1,4 +1,3 @@
-import React from 'react';
 
 const AboutPage = () => {
   return (
@@ -7,7 +6,7 @@ const AboutPage = () => {
       <p className="mb-6 text-sm text-gray-600">
         Subulussalam Rent Car hadir untuk menyediakan layanan sewa mobil dengan
         kenyamanan, keamanan, dan harga yang transparan. Kami siap membantu
-        perjalanan Anda dengan armada kendaraan yang terawat dan tim yang
+        perjalanan Anda dengan mobil kendaraan yang terawat dan tim yang
         profesional.
       </p>
 
@@ -22,7 +21,7 @@ const AboutPage = () => {
         <div className="rounded-3xl border border-slate-200 p-6 shadow-sm bg-white">
           <h2 className="text-xl font-semibold mb-3">Misi</h2>
           <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
-            <li>Menyediakan armada yang terawat dan nyaman.</li>
+            <li>Menyediakan mobil yang terawat dan nyaman.</li>
             <li>Memberikan proses pemesanan yang cepat dan mudah.</li>
             <li>Mendukung perjalanan bisnis maupun liburan dengan layanan penuh.</li>
           </ul>

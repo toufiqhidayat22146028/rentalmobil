@@ -62,6 +62,10 @@ const BookingCard = ({ booking, onCancel, showActions = true }) => {
             <Car className="w-3.5 h-3.5 text-primary-600" />
             {booking.withDriver ? 'Dengan Sopir' : 'Tanpa Sopir'}
           </span>
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-primary-600" />
+            {booking.usageArea === 'luar_kota' ? 'Luar Kota' : 'Dalam Kota'}
+          </span>
         </div>
 
         {/* Footer: Harga + Tombol */}

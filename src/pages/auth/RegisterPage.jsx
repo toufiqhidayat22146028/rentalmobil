@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Car, User, Mail, Lock, Phone, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, Phone, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const RegisterPage = () => {
@@ -37,13 +37,12 @@ const RegisterPage = () => {
           <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-primary-400/10 rounded-full blur-3xl" />
         </div>
         <div className="relative text-center">
-          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/30">
-            <Car className="w-10 h-10 text-white" />
+          <div className="w-48 h-48 sm:w-64 sm:h-64 mx-auto mb-8 bg-white rounded-[2rem] p-4 shadow-2xl flex items-center justify-center overflow-hidden">
+            <img src="/logo-new.jpg" alt="Logo" className="w-full h-full object-contain" />
           </div>
-          <h2 className="text-3xl font-display font-bold text-white mb-3">Bergabung Sekarang</h2>
-          <p className="text-primary-200 leading-relaxed max-w-xs">Daftar gratis dan nikmati kemudahan peminjaman mobil kapan saja, di mana saja.</p>
-          <div className="mt-10 space-y-3 text-left">
-            {['Akses 500+ armada kendaraan', 'Harga transparan tanpa biaya tersembunyi', 'Konfirmasi booking cepat', 'Layanan pelanggan 24/7'].map((f) => (
+          <p className="text-primary-200 leading-relaxed max-w-xs mx-auto">Daftar gratis dan nikmati kemudahan peminjaman mobil kapan saja, di mana saja.</p>
+          <div className="mt-10 space-y-3 text-left w-max mx-auto">
+            {['Pilihan mobil berkualitas', 'Harga transparan tanpa biaya tersembunyi', 'Konfirmasi booking cepat', 'Layanan pelanggan 24/7'].map((f) => (
               <div key={f} className="flex items-center gap-3 text-primary-100 text-sm">
                 <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />{f}
               </div>
@@ -57,7 +56,7 @@ const RegisterPage = () => {
         <div className="w-full max-w-md py-8">
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
             <div className="w-64 h-20 overflow-hidden flex items-center justify-center p-0.5">
-              <img src="/logo-light.svg?v=3" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+              <img src="/logo-new.jpg" alt="Logo" className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
             </div>
           </div>
 

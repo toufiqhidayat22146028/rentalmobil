@@ -11,7 +11,7 @@ const FUELS = ['Bensin', 'Diesel', 'Hybrid'];
 const EMPTY_FORM = {
   name: '', brand: '', type: 'MPV', year: 2023, capacity: 5,
   transmission: 'Manual', fuel: 'Bensin', pricePerDay: '',
-  driverCostPerDay: 150000, available: true, description: '',
+  driverCostPerDay: 150000, available: true, priority: 0, description: '',
   color: '', plateNumber: '', image: '', features: [], specs: {},
   imageFile: null, imagePreview: '',
 };
@@ -52,7 +52,7 @@ const ManageCarPage = () => {
       capacity: car.capacity, transmission: car.transmission, fuel: car.fuel,
       pricePerDay: car.pricePerDay || car.price_per_day,
       driverCostPerDay: car.driverCostPerDay || car.driver_cost_per_day,
-      available: car.available, description: car.description, color: car.color,
+      available: car.available, priority: car.priority || 0, description: car.description, color: car.color,
       plateNumber: car.plateNumber || car.plate_number, image: car.image,
       features: [...(car.features || [])], specs: { ...(car.specs || {}) },
       imageFile: null, imagePreview: '',
@@ -312,15 +312,21 @@ const ManageCarPage = () => {
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <label className="form-label mb-0">Tersedia:</label>
-            <button type="button" onClick={() => setForm(f => ({ ...f, available: !f.available }))}
-              className={`relative w-12 h-6 rounded-full transition-colors ${form.available ? 'bg-primary-700' : 'bg-gray-300'}`}>
-              <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.available ? 'translate-x-6' : ''}`} />
-            </button>
-            <span className="text-sm text-gray-600">{form.available ? 'Ya' : 'Tidak'}</span>
-          </div>
-          <div className="flex gap-3 pt-2">
+            <div className="flex items-center gap-3">
+              <label className="form-label mb-0 w-32">Tersedia:</label>
+              <button type="button" onClick={() => setForm(f => ({ ...f, available: !f.available }))}
+                className={`relative w-12 h-6 rounded-full transition-colors ${form.available ? 'bg-primary-700' : 'bg-gray-300'}`}>
+                <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.available ? 'translate-x-6' : ''}`} />
+              </button>
+              <span className="text-sm text-gray-600">{form.available ? 'Ya' : 'Tidak'}</span>
+            </div>
+            <div className="flex items-center gap-3 mb-2">
+              <label className="form-label mb-0 w-32">Prioritas Tampilan:</label>
+              <input type="number" value={form.priority} onChange={(e) => setForm({ ...form, priority: parseInt(e.target.value) || 0 })}
+                className="form-input w-24 text-center" placeholder="0" min="0" />
+              <span className="text-xs text-gray-400 italic">Angka lebih besar tampil paling atas</span>
+            </div>
+            <div className="flex gap-3 pt-2">
             <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-medium">Batal</button>
             <button onClick={handleSave} disabled={saving} className="flex-1 btn-primary justify-center disabled:bg-gray-200">
               {saving ? 'Menyimpan...' : editCar ? 'Simpan Perubahan' : 'Tambahkan'}

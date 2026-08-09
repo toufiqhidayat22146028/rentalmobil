@@ -88,6 +88,7 @@ const initSchema = async () => {
         harga_per_hari        DECIMAL(12,2)  NOT NULL,
         biaya_sopir_per_hari  DECIMAL(12,2)  DEFAULT 150000.00,
         tersedia              TINYINT(1)     NOT NULL DEFAULT 1,
+        prioritas             INT            DEFAULT 0,
         sedang_perbaikan      TINYINT(1)     DEFAULT 0,
         deskripsi             TEXT           DEFAULT NULL,
         warna                 VARCHAR(50)    DEFAULT '',
@@ -112,10 +113,12 @@ const initSchema = async () => {
         mobil_id               INT           NOT NULL,
         tanggal_mulai          DATE          NOT NULL,
         tanggal_kembali        DATE          NOT NULL,
-        durasi_hari            SMALLINT      NOT NULL,
-        lokasi_penjemputan     TEXT          DEFAULT NULL,
-        dengan_sopir           TINYINT(1)    DEFAULT 0,
+        durasi_hari            INT           NOT NULL,
+        area_pemakaian         ENUM('dalam_kota', 'luar_kota') DEFAULT 'dalam_kota',
+        lokasi_penjemputan     VARCHAR(255)  DEFAULT '',
+        dengan_sopir           BOOLEAN       DEFAULT FALSE,
         total_biaya            DECIMAL(15,2) NOT NULL,
+        biaya_luar_kota        DECIMAL(15,2) DEFAULT 0,
         catatan                TEXT          DEFAULT NULL,
         status                 ENUM('pending','approved','active','completed','cancelled') NOT NULL DEFAULT 'pending',
         status_pembayaran      ENUM('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar',
@@ -179,6 +182,24 @@ const initSchema = async () => {
       `ALTER TABLE chat_pesan ADD COLUMN IF NOT EXISTS session_id VARCHAR(50) NOT NULL DEFAULT '' AFTER percakapan_id`
     );
     await ensureSessionIndex(conn, 'chat_pesan', 'session_id');
+
+    // ── TABEL: ulasan_mobil ────────────────────────────────────────
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS ulasan_mobil (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        peminjaman_id VARCHAR(20) NOT NULL UNIQUE,
+        pengguna_id INT NOT NULL,
+        mobil_id INT NOT NULL,
+        rating TINYINT NOT NULL CHECK(rating >= 1 AND rating <= 5),
+        komentar TEXT,
+        dibuat_pada DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (peminjaman_id) REFERENCES peminjaman(id) ON DELETE CASCADE,
+        FOREIGN KEY (pengguna_id) REFERENCES pengguna(id) ON DELETE CASCADE,
+        FOREIGN KEY (mobil_id) REFERENCES mobil(id) ON DELETE CASCADE,
+        INDEX idx_mobil_id (mobil_id),
+        INDEX idx_pengguna_id (pengguna_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
 
     console.log('[DB] ✅ Schema MySQL berhasil diinisialisasi');
   } finally {

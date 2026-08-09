@@ -21,6 +21,7 @@ const parseCar = (row) => {
     pricePerDay:       Number(row.harga_per_hari),
     driverCostPerDay:  Number(row.biaya_sopir_per_hari),
     available:         Boolean(row.tersedia),
+    priority:          row.prioritas || 0,
     isMaintenance:     Boolean(row.sedang_perbaikan),
     description:       row.deskripsi,
     color:             row.warna,
@@ -56,9 +57,9 @@ router.get('/', async (req, res) => {
       price_asc:  'harga_per_hari ASC',
       price_desc: 'harga_per_hari DESC',
       rating:     'rating DESC',
-      default:    'id ASC',
+      default:    'prioritas DESC, id DESC',
     };
-    sql += ` ORDER BY ${sortMap[sort] || 'id ASC'}`;
+    sql += ` ORDER BY ${sortMap[sort] || 'prioritas DESC, id DESC'}`;
 
     const [rows] = await pool.query(sql, params);
     res.json({ success: true, data: rows.map(parseCar), total: rows.length });
@@ -95,7 +96,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', authenticate, adminOnly, async (req, res) => {
   try {
     const { name, brand, type, year, capacity, transmission, fuel, pricePerDay,
-            driverCostPerDay, available, description, color, plateNumber, image,
+            driverCostPerDay, available, priority = 0, description, color, plateNumber, image,
             features = [], specs = {} } = req.body;
 
     if (!name || !brand || !pricePerDay)
@@ -103,12 +104,12 @@ router.post('/', authenticate, adminOnly, async (req, res) => {
 
     const [result] = await pool.query(
       `INSERT INTO mobil (nama, merek, tipe, tahun, kapasitas, transmisi, bahan_bakar,
-        harga_per_hari, biaya_sopir_per_hari, tersedia, deskripsi, warna,
+        harga_per_hari, biaya_sopir_per_hari, tersedia, prioritas, deskripsi, warna,
         nomor_plat, gambar, fitur, spesifikasi)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, brand, type || 'MPV', year || 2023, capacity || 5,
        transmission || 'Manual', fuel || 'Bensin', pricePerDay,
-       driverCostPerDay || 150000, available ? 1 : 0,
+       driverCostPerDay || 150000, available ? 1 : 0, priority,
        description || '', color || '', plateNumber || '', image || '',
        JSON.stringify(features), JSON.stringify(specs)]
     );
@@ -127,16 +128,16 @@ router.put('/:id', authenticate, adminOnly, async (req, res) => {
     if (!car) return res.status(404).json({ success: false, message: 'Kendaraan tidak ditemukan.' });
 
     const { name, brand, type, year, capacity, transmission, fuel, pricePerDay,
-            driverCostPerDay, available, description, color, plateNumber, image,
+            driverCostPerDay, available, priority = 0, description, color, plateNumber, image,
             features, specs } = req.body;
 
     await pool.query(
       `UPDATE mobil SET nama=?, merek=?, tipe=?, tahun=?, kapasitas=?, transmisi=?,
-        bahan_bakar=?, harga_per_hari=?, biaya_sopir_per_hari=?, tersedia=?,
+        bahan_bakar=?, harga_per_hari=?, biaya_sopir_per_hari=?, tersedia=?, prioritas=?,
         deskripsi=?, warna=?, nomor_plat=?, gambar=?, fitur=?, spesifikasi=?
        WHERE id=?`,
       [name, brand, type, year, capacity, transmission, fuel,
-       pricePerDay, driverCostPerDay, available ? 1 : 0,
+       pricePerDay, driverCostPerDay, available ? 1 : 0, priority,
        description, color, plateNumber, image,
        JSON.stringify(features || []), JSON.stringify(specs || {}),
        req.params.id]
@@ -204,6 +205,74 @@ router.patch('/:id/toggle', authenticate, adminOnly, async (req, res) => {
       message: `Kendaraan berhasil ${newStatus ? 'diaktifkan' : 'dinonaktifkan'}.`,
     });
   } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+// ── GET /api/cars/:id/reviews ──────────────────────────────────────
+router.get('/:id/reviews', async (req, res) => {
+  try {
+    const [reviews] = await pool.query(
+      `SELECT u.*, p.nama AS userName, p.avatar AS userAvatar
+       FROM ulasan_mobil u
+       JOIN pengguna p ON u.pengguna_id = p.id
+       WHERE u.mobil_id = ?
+       ORDER BY u.dibuat_pada DESC`,
+      [req.params.id]
+    );
+    res.json({ success: true, data: reviews });
+  } catch (err) {
+    console.error('[CARS API ERROR] GET /:id/reviews', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── POST /api/cars/:id/reviews ─────────────────────────────────────
+router.post('/:id/reviews', authenticate, async (req, res) => {
+  try {
+    const { bookingId, rating, comment } = req.body;
+    const mobilId = req.params.id;
+    const userId = req.user.id;
+
+    if (!bookingId || !rating) {
+      return res.status(400).json({ success: false, message: 'Data ulasan tidak lengkap.' });
+    }
+
+    // Pastikan booking valid dan milik user, serta statusnya completed
+    const [[booking]] = await pool.query(
+      'SELECT id, status FROM peminjaman WHERE id = ? AND pengguna_id = ? AND mobil_id = ?',
+      [bookingId, userId, mobilId]
+    );
+
+    if (!booking) {
+      return res.status(403).json({ success: false, message: 'Peminjaman tidak valid atau bukan milik Anda.' });
+    }
+    if (booking.status !== 'completed') {
+      return res.status(400).json({ success: false, message: 'Ulasan hanya dapat diberikan setelah peminjaman selesai.' });
+    }
+
+    // Insert ulasan (jika duplikat peminjaman_id, database akan menolak karena UNIQUE)
+    await pool.query(
+      'INSERT INTO ulasan_mobil (peminjaman_id, pengguna_id, mobil_id, rating, komentar) VALUES (?, ?, ?, ?, ?)',
+      [bookingId, userId, mobilId, rating, comment || '']
+    );
+
+    // Hitung ulang rating & total_ulasan
+    const [[stats]] = await pool.query(
+      'SELECT COUNT(*) as total, AVG(rating) as avg_rating FROM ulasan_mobil WHERE mobil_id = ?',
+      [mobilId]
+    );
+
+    await pool.query(
+      'UPDATE mobil SET rating = ?, total_ulasan = ? WHERE id = ?',
+      [stats.avg_rating || 0, stats.total, mobilId]
+    );
+
+    res.status(201).json({ success: true, message: 'Ulasan berhasil disimpan.' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ success: false, message: 'Anda sudah memberikan ulasan untuk peminjaman ini.' });
+    }
+    console.error('[CARS API ERROR] POST /:id/reviews', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });

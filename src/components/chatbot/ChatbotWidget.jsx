@@ -6,6 +6,7 @@ import {
   Send, 
   Minimize2,
   Bot,
+  User,
   RotateCcw,
   LogIn
 } from 'lucide-react';
@@ -14,7 +15,13 @@ import {
   WELCOME_MESSAGE,
   ADMIN_CONTACT,
   getLocalBotResponse,
-  updateFAQData
+  getBotResponse,
+  updateFAQData,
+  MAIN_MENU_REPLIES,
+  CAR_MENU_REPLIES,
+  PRICE_MENU_REPLIES,
+  BOOKING_MENU_REPLIES,
+  REQUIREMENTS_MENU_REPLIES
 } from '../../data/chatbotFAQ';
 import { useAuth } from '../../context/AuthContext';
 import { chatAPI, carsAPI } from '../../services/api';
@@ -32,6 +39,7 @@ const ChatbotWidget = () => {
   const [isBackendAvailable, setIsBackendAvailable] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [hasNotification, setHasNotification] = useState(false);
+  const [localAdminMode, setLocalAdminMode] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -75,7 +83,8 @@ const ChatbotWidget = () => {
         if (msgs.length > 0) {
           const processedMsgs = msgs.map((msg, i) => {
              if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
-                 return { ...msg, suggestions: MAIN_MENU_REPLIES };
+                 const botReply = getBotResponse(msg.content);
+                 return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
              }
              return msg;
           });
@@ -101,15 +110,17 @@ const ChatbotWidget = () => {
         const msgs = conv.messages && conv.messages.length > 0 ? conv.messages : [WELCOME_MESSAGE];
         const processedMsgs = msgs.map((msg, i) => {
              if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
-                 return { ...msg, suggestions: MAIN_MENU_REPLIES };
+                 const botReply = getBotResponse(msg.content);
+                 return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
              }
              return msg;
         });
         setMessages(processedMsgs);
-        setConversationId(conv.id);
+        setConversationId(conv.conversation.id);
         setErrorMessage('');
         setIsBackendAvailable(true);
-        return conv.id;
+        setLocalAdminMode(false);
+        return conv.conversation.id;
       }
     } catch (err) {
       console.error('[Chatbot] Gagal inisialisasi percakapan, beralih ke mode lokal.');
@@ -120,12 +131,14 @@ const ChatbotWidget = () => {
     return null;
   }, [user]);
 
+  // Update effect untuk reset penuh saat logout
   useEffect(() => {
     if (!user) {
       setConversationId(null);
       setMessages([]);
       setErrorMessage('');
       setIsBackendAvailable(true);
+      setLocalAdminMode(false);
     }
   }, [user]);
 
@@ -143,11 +156,27 @@ const ChatbotWidget = () => {
         const res = await chatAPI.getMessages(conversationId);
         if (res.data.success) {
           const backendMessages = res.data.data;
-          if (backendMessages.length > messages.length) {
-            setMessages(backendMessages);
-            if (!isOpen) {
+          
+          const isDifferent = backendMessages.length !== messages.length || 
+            backendMessages.some((bMsg, i) => {
+              const lMsg = messages[i];
+              if (!lMsg) return true;
+              return bMsg.is_read !== lMsg.is_read || bMsg.isRead !== lMsg.isRead || bMsg.id !== lMsg.id;
+            });
+
+          if (isDifferent) {
+            const processedMsgs = backendMessages.map((msg, i) => {
+                   if (msg.role === 'bot' && i === backendMessages.length - 1 && !msg.suggestions) {
+                       const botReply = getBotResponse(msg.content);
+                       return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
+                   }
+                   return msg;
+              });
+            
+            if (!isOpen && backendMessages.length > messages.length) {
               setHasNotification(true);
             }
+            setMessages(processedMsgs);
           }
         }
       } catch (err) {
@@ -163,11 +192,13 @@ const ChatbotWidget = () => {
     if (!user) {
       setMessages([WELCOME_MESSAGE]);
       setConversationId(null);
+      setLocalAdminMode(false);
       return;
     }
     
     setIsConversationLoading(true);
     setErrorMessage('');
+    
     try {
       if (conversationId) {
         await chatAPI.closeConversation(conversationId);
@@ -175,22 +206,25 @@ const ChatbotWidget = () => {
       const res = await chatAPI.createConversation({ forceNew: true });
       if (res.data.success) {
         const conv = res.data.data;
-        setConversationId(conv.id);
+        setConversationId(conv.conversation.id);
         const msgs = conv.messages && conv.messages.length > 0 ? conv.messages : [WELCOME_MESSAGE];
         const processedMsgs = msgs.map((msg, i) => {
              if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
-                 return { ...msg, suggestions: MAIN_MENU_REPLIES };
+                 const botReply = getBotResponse(msg.content);
+                 return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
              }
              return msg;
         });
         setMessages(processedMsgs);
         setIsBackendAvailable(true);
+        setLocalAdminMode(false);
       }
     } catch (err) {
       console.error('[Chatbot] Gagal membuat obrolan baru:', err);
       setMessages([WELCOME_MESSAGE]);
       setConversationId(null);
       setIsBackendAvailable(false);
+      setLocalAdminMode(false);
     } finally {
       setIsConversationLoading(false);
     }
@@ -274,7 +308,24 @@ const ChatbotWidget = () => {
     setIsTyping(true);
 
     const sendLocalResponse = () => {
-      const response = getLocalBotResponse(nextKey || detectNextReplySet(trimmed), trimmed);
+      // Jika user sudah masuk local admin mode, jangan balas lagi
+      if (localAdminMode) return;
+
+      const detectedKey = nextKey || detectNextReplySet(trimmed);
+      const response = getLocalBotResponse(detectedKey, trimmed);
+      
+      // Deteksi jika user meminta admin
+      if (detectedKey === 'admin' || response.next === 'admin') {
+        setLocalAdminMode(true);
+      }
+      
+      if (!user && (detectedKey === 'admin' || response.next === 'admin')) {
+        response.content = '👨‍💼 **Pemberitahuan:**\n\nAnda sedang mengakses chat sebagai tamu. Agar pesan Anda dapat terhubung langsung dan dibalas oleh Admin kami, silakan **Login** terlebih dahulu. Anda tetap bisa menggunakan menu chat otomatis kami di bawah ini.';
+        response.suggestions = [{ id: 'login-hint', label: '🏠 Menu Utama', message: 'Menu Utama', next: 'main' }];
+        // Izinkan bot merespon lagi jika mereka tamu (jangan lock)
+        setLocalAdminMode(false);
+      }
+
       const botTempMsg = {
         id: `bot-${Date.now()}`,
         role: 'bot',
@@ -409,32 +460,30 @@ const ChatbotWidget = () => {
       {isOpen && (
         <div className="w-[360px] sm:w-[380px] bg-white rounded-2xl shadow-chatbot border border-gray-100 flex flex-col overflow-hidden animate-slide-up max-h-[540px]">
           {/* HEADER CHAT */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-900 to-slate-800">
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <User className="w-6 h-6 text-white" />
                 </div>
                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-slate-900 rounded-full" />
               </div>
               
               <div>
-                <p className="text-white font-semibold text-sm leading-tight">AsistenBot</p>
+                <p className="text-white font-semibold text-sm leading-tight">Customer Service</p>
                 <p className="text-slate-300 text-xs">Online • Siap membantu</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1">
-              {user && (
-                <button
-                  onClick={handleReset}
-                  className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title="Mulai percakapan baru"
-                  aria-label="Reset percakapan"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              )}
+              <button
+                onClick={handleReset}
+                className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                title="Mulai percakapan baru"
+                aria-label="Reset percakapan"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
               
               <button
                 onClick={handleCloseChat}

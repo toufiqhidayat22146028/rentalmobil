@@ -22,11 +22,8 @@ let carMenuButtons = MOCK_CARS.slice(0, 4).map((car, index) => ({
 export const MAIN_MENU_REPLIES = [
   { id: 'main-1', label: '🚗 Daftar Mobil', message: 'Daftar Mobil', next: 'cars' },
   { id: 'main-2', label: '💰 Harga Rental', message: 'Harga Rental', next: 'price' },
-  { id: 'main-3', label: '📅 Cek Ketersediaan', message: 'Cek Ketersediaan', next: 'checkAvailability' },
   { id: 'main-4', label: '📝 Cara Pemesanan', message: 'Cara Pemesanan', next: 'booking' },
   { id: 'main-5', label: '📋 Syarat & Ketentuan', message: 'Syarat & Ketentuan', next: 'requirements' },
-  { id: 'main-6', label: '🕘 Riwayat Chat', message: 'Riwayat Chat', next: 'history' },
-  { id: 'main-7', label: '➕ Buat Obrolan Baru', message: 'Buat Obrolan Baru', next: 'newChat' },
   { id: 'main-8', label: '👨‍💼 Hubungi Admin', message: 'Hubungi Admin', next: 'admin' },
 ];
 
@@ -135,7 +132,7 @@ export const WELCOME_MESSAGE = {
   id: 'welcome',
   role: 'bot',
   content:
-    '👋 **Halo! Selamat datang di Rental Mobil 🚗**\n\nSaya siap membantu Anda mendapatkan informasi mengenai layanan rental mobil.\n\nSilakan pilih menu yang tersedia:',
+    '👋 **Halo! Selamat datang di Rental Mobil 🚗**\n\nSaya dengan Customer Service. Ada yang bisa kami bantu hari ini?\n\nSilakan pilih menu yang tersedia:',
   timestamp: new Date().toISOString(),
 };
 
@@ -284,47 +281,7 @@ export const getLocalBotResponse = (nextKey, message = '') => {
         suggestions: BOOKING_MENU_REPLIES,
       };
 
-    case 'checkAvailability':
-      if (car) {
-        const matchStart = message.match(/(\d{1,2}(?:\s*(?:januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)[a-z]*\s*(?:\d{4})?)?)\s*(?:sampai|hingga|-|s\/d)\s*/i);
-        const matchEnd = message.match(/(?:sampai|hingga|-|s\/d)\s*(\d{1,2}(?:\s*(?:januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember|jan|feb|mar|apr|mei|jun|jul|agu|sep|okt|nov|des)[a-z]*\s*(?:\d{4})?)?)/i);
-        
-        if (matchStart && matchStart[1] && matchEnd && matchEnd[1]) {
-          const parsedStart = matchStart[1].trim();
-          const parsedEnd = matchEnd[1].trim();
-          
-          if (parsedStart && parsedEnd) {
-            const isAvail = car.available; 
-            if (isAvail) {
-              return {
-                content: `✅ **Mobil Tersedia**\n\nMobil ${car.name} tersedia untuk tanggal ${parsedStart} sampai ${parsedEnd}.\n\nSilakan pilih menu **Mulai Pemesanan** untuk melanjutkan.`,
-                next: 'order',
-                suggestions: [{ id: 'avail-order', label: '📝 Mulai Pemesanan', message: 'Mulai Pemesanan', next: 'order' }],
-              };
-            } else {
-              return {
-                content: `❌ **Mobil Tidak Tersedia**\n\nMohon maaf, ${car.name} tidak tersedia untuk tanggal ${parsedStart} sampai ${parsedEnd}.\n\nSilakan pilih tanggal lain atau cek mobil lainnya:`,
-                next: 'availability',
-                suggestions: [
-                  { id: 'avail-other-date', label: '📅 Cek Tanggal Lain', message: 'Cek Ketersediaan', next: 'availability' },
-                  { id: 'avail-other-car', label: '🚗 Cek Daftar Mobil', message: 'Daftar Mobil', next: 'cars' }
-                ]
-              };
-            }
-          }
-        }
-        return {
-          content: `📅 **Cek Ketersediaan**\n\nSilakan masukkan tanggal mulai dan tanggal selesai untuk ${car.name}.`,
-          next: 'checkAvailability',
-          suggestions: [],
-        };
-      }
-      return {
-        content:
-          '📅 **Cek Ketersediaan**\n\nSilakan masukkan nama mobil dan tanggal rental.\n\nContoh:\n"Toyota Avanza, 10 sampai 12 Agustus."',
-        next: 'checkAvailability',
-        suggestions: [],
-      };
+
 
     case 'confirmation':
       return {
@@ -353,22 +310,37 @@ export const getLocalBotResponse = (nextKey, message = '') => {
 
 export const FAQ_DATA = [
   {
-    keywords: ['harga', 'tarif', 'biaya', 'sewa', 'bayar', 'harganya'],
+    keywords: ['selamat datang', 'halo', 'menu utama'],
+    answer: 'Silakan pilih menu utama:',
+    category: 'welcome',
+  },
+  {
+    keywords: ['harga', 'tarif', 'biaya', 'bayar'],
     answer:
-      '💰 **Harga Sewa Mobil Kami:**\n\n• Toyota Avanza : Rp 280.000/hari\n• Toyota Innova : Rp 450.000/hari\n• Toyota Fortuner : Rp 700.000/hari\n• Toyota Alphard : Rp 1.200.000/hari\n\nUntuk estimasi harga per durasi, ketik nama mobil dan jumlah hari sewa.',
+      '💰 **Harga Sewa Mobil Kami (Dalam Kota):**\n\n• Toyota Avanza : Rp 280.000/hari\n• Toyota Innova : Rp 450.000/hari\n• Toyota Fortuner : Rp 700.000/hari\n• Toyota Alphard : Rp 1.200.000/hari\n\n_Catatan: Untuk pemakaian Luar Kota, dikenakan biaya tambahan sebesar Rp 150.000/hari._\n\nUntuk estimasi harga per durasi, ketik nama mobil dan jumlah hari sewa.',
     category: 'harga',
   },
   {
     keywords: ['ketersediaan', 'tersedia', 'stok', 'mobil apa', 'jenis', 'tipe', 'daftar mobil'],
     answer:
-      '🚗 **Armada Mobil Tersedia:**\n• Toyota Avanza\n• Toyota Innova\n• Toyota Fortuner\n• Toyota Alphard\n• Honda CR-V\n• Mitsubishi Pajero Sport\n\nUntuk detail atau ketersediaan terkini, silakan pilih mobil atau hubungi admin.',
-    category: 'armada',
+      '🚗 **Mobil Mobil Tersedia:**\n• Toyota Avanza\n• Toyota Innova\n• Toyota Fortuner\n• Toyota Alphard\n• Honda CR-V\n• Mitsubishi Pajero Sport\n\nUntuk detail atau ketersediaan terkini, silakan pilih mobil atau hubungi admin.',
+    category: 'mobil',
   },
   {
     keywords: ['cara', 'pesan', 'booking', 'pinjam', 'pesanan'],
     answer:
       '📋 **Cara Booking:**\n1. Pilih mobil yang diinginkan.\n2. Masukkan tanggal sewa dan tanggal kembali.\n3. Isi data penyewa.\n4. Kirim request booking.\n5. Tunggu konfirmasi admin.\n\nUntuk bantuan langsung, hubungi admin.',
     category: 'pemesanan',
+  },
+  {
+    keywords: ['syarat', 'ketentuan', 'persyaratan'],
+    answer: 'Persyaratan',
+    category: 'syarat',
+  },
+  {
+    keywords: ['kembali', 'pengembalian'],
+    answer: 'Pengembalian',
+    category: 'kembali',
   },
 ];
 
@@ -377,8 +349,21 @@ export const getBotResponse = (userMessage) => {
   const matchedFAQ = FAQ_DATA.find((faq) =>
     faq.keywords.some((keyword) => lowerMessage.includes(keyword))
   );
-  if (matchedFAQ) return matchedFAQ.answer;
-  return (
-    '🤔 Maaf, saya belum mengerti pertanyaan Anda.\n\nSilakan pilih salah satu menu yang tersedia agar saya dapat membantu Anda.\n\n• 🚗 Lihat Mobil\n• 💰 Harga Sewa\n• 📅 Cara Booking\n• 📋 Syarat Sewa\n• 🔄 Pengembalian\n• 👨‍💼 Hubungi Admin\n• 🏠 Menu Utama'
-  );
+  if (matchedFAQ) {
+    let suggestions = MAIN_MENU_REPLIES;
+    if (matchedFAQ.category === 'mobil') suggestions = CAR_MENU_REPLIES;
+    if (matchedFAQ.category === 'harga') suggestions = PRICE_MENU_REPLIES;
+    if (matchedFAQ.category === 'pemesanan') suggestions = BOOKING_MENU_REPLIES;
+    if (matchedFAQ.category === 'syarat') suggestions = REQUIREMENTS_MENU_REPLIES;
+    if (matchedFAQ.category === 'kembali') suggestions = RETURN_MENU_REPLIES;
+    
+    return {
+      content: matchedFAQ.answer,
+      suggestions
+    };
+  }
+  return {
+    content: '🤔 Maaf, saya belum mengerti pertanyaan Anda.\n\nSilakan pilih salah satu menu yang tersedia agar saya dapat membantu Anda.\n\n• 🚗 Lihat Mobil\n• 💰 Harga Sewa\n• 📅 Cara Booking\n• 📋 Syarat Sewa\n• 🔄 Pengembalian\n• 👨‍💼 Hubungi Admin\n• 🏠 Menu Utama',
+    suggestions: MAIN_MENU_REPLIES
+  };
 };

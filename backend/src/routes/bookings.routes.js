@@ -26,6 +26,9 @@ const formatBooking = (b) => {
     paymentMethod:         b.metode_pembayaran,
     paymentTransactionId:  b.transaksi_pembayaran_id,
     paymentDate:           b.tanggal_pembayaran,
+    usageArea:             b.area_pemakaian || 'dalam_kota',
+    outOfTownCost:         Number(b.biaya_luar_kota) || 0,
+    hasReviewed:           Boolean(b.hasReviewed),
     createdAt:             b.dibuat_pada,
   };
 };
@@ -39,7 +42,7 @@ const generateBookingId = async () => {
 router.get('/', authenticate, async (req, res) => {
   try {
     const { status } = req.query;
-    let sql    = 'SELECT p.*, m.nama AS carName, m.gambar AS carImage FROM peminjaman p LEFT JOIN mobil m ON p.mobil_id = m.id WHERE 1=1';
+    let sql    = 'SELECT p.*, m.nama AS carName, m.gambar AS carImage, (SELECT COUNT(*) FROM ulasan_mobil WHERE peminjaman_id = p.id) AS hasReviewed FROM peminjaman p LEFT JOIN mobil m ON p.mobil_id = m.id WHERE 1=1';
     const params = [];
 
     if (req.user.role !== 'admin') {
@@ -106,7 +109,7 @@ router.get('/stats/summary', authenticate, adminOnly, async (req, res) => {
 // ── GET /api/bookings/:id ─────────────────────────────────
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const [[booking]] = await pool.query('SELECT p.*, m.nama AS carName, m.gambar AS carImage FROM peminjaman p LEFT JOIN mobil m ON p.mobil_id = m.id WHERE p.id = ?', [req.params.id]);
+    const [[booking]] = await pool.query('SELECT p.*, m.nama AS carName, m.gambar AS carImage, (SELECT COUNT(*) FROM ulasan_mobil WHERE peminjaman_id = p.id) AS hasReviewed FROM peminjaman p LEFT JOIN mobil m ON p.mobil_id = m.id WHERE p.id = ?', [req.params.id]);
     if (!booking) return res.status(404).json({ success: false, message: 'Peminjaman tidak ditemukan.' });
 
     if (req.user.role !== 'admin' && booking.pengguna_id !== req.user.id)
@@ -121,27 +124,43 @@ router.get('/:id', authenticate, async (req, res) => {
 // ── POST /api/bookings ────────────────────────────────────
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { carId, startDate, endDate, days, pickupLocation, withDriver, totalCost, notes } = req.body;
+    const { carId, startDate, endDate, days, pickupLocation, withDriver, totalCost, notes, nik, sim, phone, address, usageArea } = req.body;
 
-    if (!carId || !startDate || !endDate || !days || !totalCost)
-      return res.status(400).json({ success: false, message: 'Data peminjaman tidak lengkap.' });
+    if (!carId || !startDate || !endDate || !days || !totalCost || !nik || !phone || !address)
+      return res.status(400).json({ success: false, message: 'Data peminjaman dan data diri tidak lengkap.' });
 
-    const [[car]] = await pool.query('SELECT id, tersedia FROM mobil WHERE id = ?', [carId]);
+    const [[car]] = await pool.query('SELECT id, tersedia, harga_per_hari, biaya_sopir_per_hari FROM mobil WHERE id = ?', [carId]);
     if (!car) return res.status(404).json({ success: false, message: 'Kendaraan tidak ditemukan.' });
     if (!car.tersedia) return res.status(400).json({ success: false, message: 'Kendaraan tidak tersedia saat ini.' });
+
+    // Validate backend total cost calculation
+    const carCost = Number(car.harga_per_hari) * Number(days);
+    const driverCost = withDriver ? Number(car.biaya_sopir_per_hari) * Number(days) : 0;
+    const isOutOfTown = usageArea === 'luar_kota';
+    const outOfTownCost = isOutOfTown ? Number(days) * 150000 : 0;
+    
+    // In production, you would strictly enforce `totalCost === expectedTotal`, but for now we trust or overwrite it.
+    const finalTotalCost = carCost + driverCost + outOfTownCost;
 
     const id = await generateBookingId();
 
     await pool.query(
       `INSERT INTO peminjaman (id, pengguna_id, mobil_id, tanggal_mulai, tanggal_kembali, durasi_hari,
-        lokasi_penjemputan, dengan_sopir, total_biaya, catatan, status, status_pembayaran)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'belum_bayar')`,
+        area_pemakaian, lokasi_penjemputan, dengan_sopir, total_biaya, biaya_luar_kota, catatan, status, status_pembayaran)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'belum_bayar')`,
       [id, req.user.id, carId, startDate, endDate, days,
-       pickupLocation || '', withDriver ? 1 : 0, totalCost, notes || '']
+       isOutOfTown ? 'luar_kota' : 'dalam_kota', pickupLocation || '', withDriver ? 1 : 0, 
+       finalTotalCost, outOfTownCost, notes || '']
     );
 
     // Kunci mobil agar tidak bisa dipinjam orang lain (set tersedia = 0)
     await pool.query('UPDATE mobil SET tersedia = 0 WHERE id = ?', [carId]);
+
+    // Update profil pengguna dengan data diri terbaru
+    await pool.query(
+      'UPDATE pengguna SET ktp = ?, sim = ?, telepon = ?, alamat = ? WHERE id = ?',
+      [nik, sim || '', phone, address, req.user.id]
+    );
 
     const [[newBooking]] = await pool.query('SELECT p.*, m.nama AS carName, m.gambar AS carImage FROM peminjaman p LEFT JOIN mobil m ON p.mobil_id = m.id WHERE p.id = ?', [id]);
     res.status(201).json({

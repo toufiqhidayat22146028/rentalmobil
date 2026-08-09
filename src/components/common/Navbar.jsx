@@ -45,7 +45,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 bg-slate-950 border-b border-slate-800 transition-all duration-300 ${isScrolled ? "shadow-2xl shadow-slate-900/50" : ""}`}
+      className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 transition-all duration-300 ${isScrolled ? "shadow-2xl shadow-sm" : ""}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -53,7 +53,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="w-64 h-16 overflow-hidden flex items-center justify-start transition-transform group-hover:scale-105">
               <img
-                src="/logo-light.svg?v=3"
+                src="/logo-new.jpg"
                 alt="Logo"
                 className="w-full h-full object-contain object-left"
                 onError={(e) => {
@@ -71,7 +71,7 @@ const Navbar = () => {
                 to={link.path}
                 end={link.path === "/"}
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? "text-white bg-slate-800 font-semibold" : "text-slate-400 hover:text-white hover:bg-slate-800"}`
+                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? "text-blue-600 bg-blue-50 font-semibold" : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"}`
                 }
               >
                 {link.label}
@@ -82,7 +82,7 @@ const Navbar = () => {
               <NavLink
                 to="/admin"
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? "text-white bg-slate-800 font-semibold" : "text-slate-400 hover:text-white hover:bg-slate-800"}`
+                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? "text-blue-600 bg-blue-50 font-semibold" : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"}`
                 }
               >
                 Admin Panel
@@ -96,16 +96,16 @@ const Navbar = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {user?.avatar || user?.name?.charAt(0)}
                   </div>
-                  <span className="text-sm font-medium text-slate-200">
+                  <span className="text-sm font-medium text-gray-700">
                     {user?.name?.split(" ")[0]}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isUserDropdownOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isUserDropdownOpen ? "rotate-180" : ""}`}
                   />
                 </button>
 
@@ -162,7 +162,7 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 rounded-lg hover:bg-gray-50 transition-all"
                 >
                   <LogIn className="w-4 h-4" /> Masuk
                 </Link>
@@ -179,7 +179,7 @@ const Navbar = () => {
           {/* Hamburger Mobile */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors"
+            className="md:hidden p-2 rounded-lg text-slate-300 hover:bg-gray-50 transition-colors"
           >
             {isMobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -191,7 +191,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden pb-4 border-t border-slate-800 mt-1 animate-fade-in bg-slate-950 px-4 shadow-xl">
+          <div className="md:hidden pb-4 border-t border-gray-100 mt-1 animate-fade-in bg-white px-4 shadow-xl">
             <div className="flex flex-col gap-1 pt-3">
               {navLinks.map((link) => (
                 <NavLink
@@ -199,7 +199,7 @@ const Navbar = () => {
                   to={link.path}
                   end={link.path === "/"}
                   className={({ isActive }) =>
-                    `px-4 py-3 rounded-lg text-sm font-medium transition-all ${isActive ? "text-white bg-slate-800 font-semibold" : "text-slate-400 hover:text-white hover:bg-slate-800"}`
+                    `px-4 py-3 rounded-lg text-sm font-medium transition-all ${isActive ? "text-blue-600 bg-blue-50 font-semibold" : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"}`
                   }
                 >
                   {link.label}
@@ -208,18 +208,18 @@ const Navbar = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="px-4 py-3 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"
+                  className="px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                 >
                   Admin Panel
                 </Link>
               )}
             </div>
-            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-800">
+            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-100">
               {!isLoggedIn ? (
                 <>
                   <Link
                     to="/login"
-                    className="flex items-center gap-2 justify-center bg-slate-800 text-white rounded-lg text-sm py-2.5 font-medium hover:bg-slate-700 transition-all"
+                    className="flex items-center gap-2 justify-center bg-gray-100 text-gray-700 rounded-lg text-sm py-2.5 font-medium hover:bg-gray-200 transition-all"
                   >
                     <LogIn className="w-4 h-4" />
                     Masuk
