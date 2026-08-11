@@ -78,8 +78,8 @@ router.post('/register', async (req, res) => {
     const avatar   = (nameParts[0]?.[0] || '').toUpperCase() + (nameParts[1]?.[0] || '').toUpperCase();
 
     const [result] = await pool.query(
-      'INSERT INTO pengguna (nama, email, kata_sandi, telepon, avatar, peran, status) VALUES (?, ?, ?, ?, ?, "user", "aktif")',
-      [name.trim(), email.toLowerCase().trim(), hashed, phone, avatar]
+      "INSERT INTO pengguna (nama, email, kata_sandi, telepon, avatar, peran, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [name.trim(), email.toLowerCase().trim(), hashed, phone, avatar, 'user', 'aktif']
     );
 
     const [[newRow]] = await pool.query('SELECT * FROM pengguna WHERE id = ?', [result.insertId]);
