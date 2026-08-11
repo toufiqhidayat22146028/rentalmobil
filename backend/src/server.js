@@ -116,16 +116,10 @@ app.use((err, req, res, next) => {
 // ============================================================
 // START SERVER
 // ============================================================
-app.listen(PORT, () => {
-  // console.log('\n╔════════════════════════════════════════╗');
-  // console.log('║   🚗  RentalMobil API Server           ║');
-  // console.log('╠════════════════════════════════════════╣');
-  // console.log(`║  Status  : ✅ Running                   ║`);
-  // console.log(`║  Port    : ${PORT}                           ║`);
-  // console.log(`║  URL     : http://localhost:${PORT}/api    ║`);
-  // console.log(`║  DB      : MySQL (${process.env.DB_NAME || 'rentalmobil'})           ║`);
-  // console.log(`║  Mode    : ${process.env.NODE_ENV || 'development'}                   ║`);
-  // console.log('╚════════════════════════════════════════╝\n');
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    // console.log ...
+  });
+}
 
 module.exports = app;
