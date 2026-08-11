@@ -29,7 +29,7 @@ const CarDetailPage = () => {
       try {
         const [res, reviewsRes] = await Promise.all([
           carsAPI.getById(id),
-          fetch(`http://localhost:5001/api/cars/${id}/reviews`).then(r => r.json())
+          fetch(`/api/cars/${id}/reviews`).then(r => r.json())
         ]);
         if (res.data.success) {
           setCar(res.data.data);

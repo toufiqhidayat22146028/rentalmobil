@@ -27,7 +27,7 @@ const ReviewModal = ({ isOpen, booking, onClose, onSuccess }) => {
     setIsSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:5001/api/cars/${booking.carId}/reviews`, {
+      const res = await fetch(`/api/cars/${booking.carId}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
