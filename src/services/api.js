@@ -12,7 +12,7 @@ import axios from 'axios';
 // ──────────────────────────────────────────────────────────
 // KONFIGURASI AXIOS INSTANCE
 // ──────────────────────────────────────────────────────────
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = '/api';
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
