@@ -18,6 +18,7 @@ const pool = mysql.createPool({
   queueLimit:         0,
   charset:            'utf8mb4',
   timezone:           '+07:00',
+  ssl:                process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
 const ensureSessionIndex = async (conn, tableName, columnName) => {
@@ -153,12 +154,20 @@ const initSchema = async () => {
         INDEX idx_session_id (session_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    await conn.query(
-      `ALTER TABLE chat_percakapan ADD COLUMN IF NOT EXISTS session_id VARCHAR(50) NOT NULL DEFAULT '' AFTER jumlah_belum_dibaca`
-    );
-    await conn.query(
-      `ALTER TABLE chat_percakapan ADD COLUMN IF NOT EXISTS admin_mode TINYINT(1) DEFAULT 0 AFTER status`
-    );
+    try {
+      await conn.query(
+        `ALTER TABLE chat_percakapan ADD COLUMN session_id VARCHAR(50) NOT NULL DEFAULT '' AFTER jumlah_belum_dibaca`
+      );
+    } catch (err) {
+      if (err.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
+    try {
+      await conn.query(
+        `ALTER TABLE chat_percakapan ADD COLUMN admin_mode TINYINT(1) DEFAULT 0 AFTER status`
+      );
+    } catch (err) {
+      if (err.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
     await ensureSessionIndex(conn, 'chat_percakapan', 'session_id');
 
     // ── TABEL: chat_pesan ──────────────────────────────────
@@ -178,9 +187,13 @@ const initSchema = async () => {
         INDEX idx_peran_pengirim  (peran_pengirim)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    await conn.query(
-      `ALTER TABLE chat_pesan ADD COLUMN IF NOT EXISTS session_id VARCHAR(50) NOT NULL DEFAULT '' AFTER percakapan_id`
-    );
+    try {
+      await conn.query(
+        `ALTER TABLE chat_pesan ADD COLUMN session_id VARCHAR(50) NOT NULL DEFAULT '' AFTER percakapan_id`
+      );
+    } catch (err) {
+      if (err.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
     await ensureSessionIndex(conn, 'chat_pesan', 'session_id');
 
     // ── TABEL: ulasan_mobil ────────────────────────────────────────
