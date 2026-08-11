@@ -153,15 +153,29 @@ export const findCarByText = (text) => {
   const normalized = normalizeText(text);
   if (!normalized) return null;
 
+  // Hapus kata-kata umum agar tidak salah tebak (misal user ketik "harga honda cr-v", jangan sampai match dengan "honda brio" cuma gara-gara kata "honda")
+  const searchKeywords = normalized.replace(/harga|sewa|mobil|rental/g, '').trim();
+  
   return MOCK_CARS.find((car) => {
     const name = normalizeText(car.name);
     const shortName = name.replace(/toyota|honda|mitsubishi|daihatsu|suzuki|nissan/g, '').trim();
     
-    if (normalized.includes(name)) return true;
-    if (shortName && normalized.includes(shortName)) return true;
+    // 1. Cek apakah ada kecocokan persis pada nama lengkap
+    if (searchKeywords.includes(name)) return true;
     
-    const words = name.split(' ').filter((w) => w.length > 3);
-    return words.some((word) => normalized.includes(word));
+    // 2. Cek apakah ada kecocokan pada nama pendek (tanpa brand)
+    if (shortName && searchKeywords.includes(shortName)) return true;
+    
+    // 3. Fallback: Cocokkan kata unik (bukan brand)
+    const brandWords = ['toyota', 'honda', 'mitsubishi', 'daihatsu', 'suzuki', 'nissan'];
+    const carWords = name.split(' ').filter(w => w.length > 2 && !brandWords.includes(w));
+    
+    // Jika semua kata unik dari mobil tersebut ada di ketikan user, berarti cocok
+    if (carWords.length > 0 && carWords.every(word => searchKeywords.includes(word))) {
+      return true;
+    }
+    
+    return false;
   }) || null;
 };
 
