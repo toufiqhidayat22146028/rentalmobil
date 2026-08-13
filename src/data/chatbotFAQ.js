@@ -137,9 +137,9 @@ export const WELCOME_MESSAGE = {
 };
 
 export const ADMIN_CONTACT = {
-  phone: '0812-3456-7890',
+  phone: '0856-6299-954',
   email: 'info@subulussalam.com',
-  whatsapp: 'https://wa.me/6281234567890',
+  whatsapp: 'https://wa.me/628566299954',
 };
 
 const getAvailableCarsList = () => {

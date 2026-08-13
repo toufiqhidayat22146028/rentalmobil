@@ -9,7 +9,7 @@ const ContactPage = () => {
       <div className="grid gap-6">
         <div className="flex items-center gap-3">
           <Phone className="w-5 h-5 text-primary-600" />
-          <span>0812-3456-7890</span>
+          <span>0856-6299-954</span>
         </div>
         <div className="flex items-center gap-3">
           <Mail className="w-5 h-5 text-primary-600" />
@@ -17,7 +17,7 @@ const ContactPage = () => {
         </div>
         <div className="flex items-center gap-3">
           <MapPin className="w-5 h-5 text-primary-600" />
-          <span>Jl. Contoh No.1, Kota Anda</span>
+          <span>Jl. Hamzah Fansuri No. 12, Subulussalam</span>
         </div>
       </div>
 

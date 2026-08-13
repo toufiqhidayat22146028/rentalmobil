@@ -78,9 +78,9 @@ const buildCarListMessage = async () => {
     if (rows.length === 0) return 'Saat ini tidak ada mobil yang tersedia.';
     
     const lines = rows.map((car) =>
-      `• ${car.nama} (${car.tipe}) - ${car.kapasitas} orang - ${formatCurrency(Number(car.harga_per_hari))}/hari`
+      `🚗 ${car.nama} (${car.tipe})`
     );
-    return `🚗 Berikut daftar mobil rental kami:\n\n${lines.join('\n')}\n\nSilakan balas dengan nama mobil untuk melihat harga.`;
+    return `Berikut daftar mobil rental kami:\n\n${lines.join('\n')}\n\nSilakan balas dengan nama mobil untuk melihat harga.`;
   } catch (err) {
     console.error('Error buildCarList:', err);
     return 'Terjadi kesalahan saat mengambil daftar mobil.';
