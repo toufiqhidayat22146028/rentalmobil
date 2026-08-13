@@ -15,7 +15,7 @@ const formatCurrency = (value) => {
   return `Rp ${value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 };
 
-const WELCOME_MESSAGE = '👋 Halo! Selamat datang di layanan Rental Mobil.\n\nSaya dengan Customer Service. Ada yang bisa kami bantu hari ini?\n\nSilakan pilih menu:\n\n🚗 Daftar Mobil\n💰 Harga Rental\n📅 Cara Pesan\n📋 Syarat & Ketentuan\n👨‍💼 Hubungi Admin';
+const WELCOME_MESSAGE = '👋 Halo! Selamat datang di layanan Rental Mobil Subulussalam.\n\nSaya dengan SBS Rentcar. Ada yang bisa kami bantu hari ini?\n\nSilakan pilih menu:\n\n🚗 Daftar Mobil\n💰 Harga Rental\n📝 Cara Pesan\n📋 Syarat & Ketentuan\n📞 Hubungi Admin';
 
 // Removed unused ADMIN_CONTACT variable
 
@@ -236,7 +236,7 @@ router.post('/', authenticate, async (req, res) => {
       conversationId = result.insertId;
 
       await pool.query(
-        "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'bot', 'Customer Service', ?, 1)",
+        "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'bot', 'SBS Rentcar', ?, 1)",
         [conversationId, sessionId, WELCOME_MESSAGE]
       );
     }
@@ -304,7 +304,7 @@ router.post('/:id/messages', authenticate, async (req, res) => {
       if (conversation.admin_mode === 0) {
         const botAnswer = await getBotResponse(content);
         const [botResult] = await pool.query(
-          "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'bot', 'Customer Service', ?, 1)",
+          "INSERT INTO chat_pesan (percakapan_id, session_id, peran_pengirim, nama_pengirim, isi_pesan, sudah_dibaca) VALUES (?, ?, 'bot', 'SBS Rentcar', ?, 1)",
           [req.params.id, conversation.session_id, botAnswer]
         );
         const [[botMsgRow]] = await pool.query('SELECT * FROM chat_pesan WHERE id = ?', [botResult.insertId]);

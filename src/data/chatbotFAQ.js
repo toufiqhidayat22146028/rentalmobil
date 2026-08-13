@@ -132,7 +132,7 @@ export const WELCOME_MESSAGE = {
   id: 'welcome',
   role: 'bot',
   content:
-    '👋 **Halo! Selamat datang di Rental Mobil 🚗**\n\nSaya dengan Customer Service. Ada yang bisa kami bantu hari ini?\n\nSilakan pilih menu yang tersedia:',
+    '👋 **Halo! Selamat datang di layanan Rental Mobil Subulussalam 🚗**\n\nSaya dengan SBS Rentcar. Ada yang bisa kami bantu hari ini?\n\nSilakan pilih menu yang tersedia:',
   timestamp: new Date().toISOString(),
 };
 
