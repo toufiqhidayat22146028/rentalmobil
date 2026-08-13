@@ -10,7 +10,7 @@ import { carsAPI } from '../../services/api';
 import PaymentGateway from '../../components/payment/PaymentGateway';
 
 const PICKUP_OPTIONS = [
-  'Kantor Pusat – Jl. Admin No.1, Jakarta',
+  'Kantor Pusat – Jl. Hamzah Fansuri No. 12, Subulussalam',
   'Antar ke Alamat (biaya tambahan berlaku)',
 ];
 
