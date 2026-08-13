@@ -5,7 +5,7 @@ import { useBooking } from '../../context/BookingContext';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const ProfilePage = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, changePassword } = useAuth();
   const { getBookingsByUser } = useBooking();
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPass, setIsChangingPass] = useState(false);
@@ -24,13 +24,18 @@ const ProfilePage = () => {
     setTimeout(() => setSaveMsg(''), 3000);
   };
 
-  const handleSavePassword = () => {
+  const handleSavePassword = async () => {
     if (passForm.newPass.length < 6) { setSaveMsg('Password minimal 6 karakter!'); setTimeout(() => setSaveMsg(''), 3000); return; }
     if (passForm.newPass !== passForm.confirmPass) { setSaveMsg('Password tidak cocok!'); setTimeout(() => setSaveMsg(''), 3000); return; }
-    updateProfile({ password: passForm.newPass });
-    setIsChangingPass(false);
-    setPassForm({ newPass: '', confirmPass: '' });
-    setSaveMsg('Password berhasil diubah!');
+    
+    const result = await changePassword(passForm.newPass);
+    if (result.success) {
+      setIsChangingPass(false);
+      setPassForm({ newPass: '', confirmPass: '' });
+      setSaveMsg('Password berhasil diubah!');
+    } else {
+      setSaveMsg(result.message || 'Gagal mengubah password!');
+    }
     setTimeout(() => setSaveMsg(''), 3000);
   };
 

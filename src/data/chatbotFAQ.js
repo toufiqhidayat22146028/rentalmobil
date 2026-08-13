@@ -360,6 +360,14 @@ export const FAQ_DATA = [
 
 export const getBotResponse = (userMessage) => {
   const lowerMessage = normalizeText(userMessage);
+
+  if (lowerMessage.includes('berbagai macam pilihan mobil') || lowerMessage.includes('daftar mobil rental kami')) {
+    return { content: userMessage, suggestions: CAR_MENU_REPLIES };
+  }
+  if (lowerMessage.includes('harga sewa per hari')) {
+    return { content: userMessage, suggestions: PRICE_MENU_REPLIES };
+  }
+
   const matchedFAQ = FAQ_DATA.find((faq) =>
     faq.keywords.some((keyword) => lowerMessage.includes(keyword))
   );
