@@ -72,7 +72,7 @@ const Footer = () => {
               {[
                 { icon: Phone, text: '0856-6299-954' },
                 { icon: Mail, text: 'info@subulussalam.com' },
-                { icon: MapPin, text: 'Jl. Hamzah Fansuri No. 12, Dusun Rundeng Tengah, Kampong Pasar Rundeng, Kecamatan Rundeng' },
+                { icon: MapPin, text: 'Jl. Hamzah Fansuri No. 12, Dusun Rundeng Tengah, Kampong Pasar Rundeng, Kec. Rundeng, Kota Subulussalam, Aceh 27822' },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-start gap-3">
                   <Icon className="w-4 h-4 text-primary-400 flex-shrink-0 mt-0.5" />

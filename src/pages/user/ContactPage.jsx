@@ -15,10 +15,10 @@ const ContactPage = () => {
           <Mail className="w-5 h-5 text-primary-600" />
           <span>info@subulussalam.com</span>
         </div>
-        <div className="flex items-center gap-3">
-          <MapPin className="w-5 h-5 text-primary-600" />
-          <span>Jl. Hamzah Fansuri No. 12, Subulussalam</span>
-        </div>
+          <div className="flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-primary-600 flex-shrink-0" />
+            <span>Jl. Hamzah Fansuri No. 12, Dusun Rundeng Tengah, Kampong Pasar Rundeng, Kec. Rundeng, Kota Subulussalam, Aceh 27822</span>
+          </div>
       </div>
 
       <div className="mt-8 bg-white p-6 rounded-lg shadow-sm">

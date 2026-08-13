@@ -75,12 +75,7 @@ const findCarByText = async (text) => {
 const buildCarListMessage = async () => {
   try {
     const [rows] = await pool.query('SELECT * FROM mobil WHERE tersedia = 1 LIMIT 5');
-    if (rows.length === 0) return 'Saat ini tidak ada mobil yang tersedia.';
-    
-    const lines = rows.map((car) =>
-      `🚗 ${car.nama} (${car.tipe})`
-    );
-    return `Berikut daftar mobil rental kami:\n\n${lines.join('\n')}\n\nSilakan balas dengan nama mobil untuk melihat harga.`;
+    return `Tentu! Kami memiliki berbagai macam pilihan mobil mulai dari City Car, MPV keluarga, hingga SUV tangguh.\n\nUntuk melihat daftar lengkap beserta foto dan spesifikasinya, silakan kunjungi menu *Katalog Mobil* di bagian atas website kami.`;
   } catch (err) {
     console.error('Error buildCarList:', err);
     return 'Terjadi kesalahan saat mengambil daftar mobil.';
