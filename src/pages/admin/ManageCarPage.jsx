@@ -276,24 +276,22 @@ const ManageCarPage = () => {
             <input value={form.plateNumber} onChange={e => setForm(f => ({ ...f, plateNumber: e.target.value }))} placeholder="B 1234 ABC" className="form-input" /></div>
           
           <div>
-            <label className="form-label">Gambar Kendaraan</label>
-            <div className="flex items-center gap-4">
-              {(form.imagePreview || form.image) && (
-                <img src={form.imagePreview || form.image} alt="Preview" className="w-20 h-14 object-cover rounded-lg border border-gray-200" />
-              )}
-              <div className="flex-1">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleImageUpload} 
-                  disabled={uploadingImage || saving}
-                  className="form-input p-1.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" 
-                />
-                {uploadingImage && <p className="text-xs text-primary-600 mt-1">Sedang mengunggah gambar...</p>}
+            <div>
+              <label className="form-label">Gambar Kendaraan (URL)</label>
+              <div className="flex items-center gap-4 mb-2">
+                {(form.imagePreview || form.image) && (
+                  <img src={form.imagePreview || form.image} alt="Preview" className="w-20 h-14 object-cover rounded-lg border border-gray-200" />
+                )}
               </div>
+              <input 
+                value={form.image} 
+                onChange={e => setForm(f => ({ ...f, image: e.target.value, imageFile: null, imagePreview: '' }))} 
+                placeholder="Paste URL gambar mobil di sini (misal: dari Unsplash)..." 
+                className="form-input text-xs" 
+                disabled={saving} 
+              />
+              <p className="text-[10px] text-gray-500 mt-1">Karena hosting gratis (Vercel), mohon gunakan URL gambar (link) alih-alih mengunggah file langsung.</p>
             </div>
-            {/* Opsi input manual (fallback) */}
-            <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value, imageFile: null, imagePreview: '' }))} placeholder="Atau paste URL gambar..." className="form-input mt-2 text-xs" disabled={uploadingImage || saving} />
           </div>
 
           <div><label className="form-label">Deskripsi</label>
