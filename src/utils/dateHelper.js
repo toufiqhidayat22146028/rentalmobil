@@ -45,3 +45,18 @@ export const formatTime = (isoString) => {
     hour: '2-digit', minute: '2-digit', hour12: false,
   });
 };
+
+// Ambil tanggal maksimum pemesanan awal (misal max 7 hari ke depan)
+export const getMaxBookingDate = (maxDays = 7) => {
+  const date = new Date();
+  date.setDate(date.getDate() + maxDays);
+  return date.toISOString().split('T')[0];
+};
+
+// Ambil tanggal maksimum pengembalian berdasarkan tanggal mulai (misal max sewa 14 hari)
+export const getMaxReturnDate = (startDate, maxDuration = 14) => {
+  if (!startDate) return getMaxBookingDate(maxDuration);
+  const date = new Date(startDate);
+  date.setDate(date.getDate() + maxDuration);
+  return date.toISOString().split('T')[0];
+};

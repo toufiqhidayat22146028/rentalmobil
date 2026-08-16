@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { carsAPI } from '../../services/api';
 import { formatCurrency } from '../../utils/formatCurrency';
-import { calculateDays, getTodayString, getMinReturnDate } from '../../utils/dateHelper';
+import { calculateDays, getTodayString, getMinReturnDate, getMaxBookingDate, getMaxReturnDate } from '../../utils/dateHelper';
 import { useAuth } from '../../context/AuthContext';
 
 const CarDetailPage = () => {
@@ -275,6 +275,7 @@ const CarDetailPage = () => {
                 <input
                   type="date"
                   min={getTodayString()}
+                  max={getMaxBookingDate(7)}
                   value={startDate}
                   onChange={(e) => { setStartDate(e.target.value); setEndDate(''); }}
                   className="form-input"
@@ -287,6 +288,7 @@ const CarDetailPage = () => {
                 <input
                   type="date"
                   min={startDate ? getMinReturnDate(startDate) : getTodayString()}
+                  max={startDate ? getMaxReturnDate(startDate, 14) : getMaxBookingDate(14)}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   disabled={!startDate}
