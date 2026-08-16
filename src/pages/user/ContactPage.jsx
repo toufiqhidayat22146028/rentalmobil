@@ -4,7 +4,7 @@ const ContactPage = () => {
   return (
     <div className="max-w-3xl mx-auto py-16 px-4">
       <h1 className="text-3xl font-semibold mb-4">Kontak Kami</h1>
-      <p className="mb-6 text-sm text-gray-600">Hubungi tim kami melalui informasi berikut atau kirim pesan melalui formulir.</p>
+      <p className="mb-6 text-sm text-gray-600">Hubungi tim kami melalui informasi berikut untuk pertanyaan atau bantuan seputar layanan rental mobil.</p>
 
       <div className="grid gap-6">
         <div className="flex items-center gap-3">
