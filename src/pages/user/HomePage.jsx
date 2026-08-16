@@ -22,11 +22,6 @@ const HomePage = () => {
   const [selectedType, setSelectedType] = useState('');
   const [selectedTransmission, setSelectedTransmission] = useState('');
 
-  // State untuk form berlangganan promo
-  const [subscribeEmail, setSubscribeEmail] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [showSubscribeToast, setShowSubscribeToast] = useState(false);
-
   // Ambil 4 mobil unggulan dari database untuk ditampilkan
   const [featuredCars, setFeaturedCars] = useState([]);
   const [isLoadingCars, setIsLoadingCars] = useState(true);
@@ -63,31 +58,8 @@ const HomePage = () => {
     navigate(`/katalog${queryString}`);
   };
 
-  // Handler Submit Form Subscribe
-  const handleSubscribeSubmit = (e) => {
-    e.preventDefault();
-    if (!subscribeEmail) return;
-    setIsSubscribed(true);
-    setShowSubscribeToast(true);
-    setSubscribeEmail('');
-    setTimeout(() => setShowSubscribeToast(false), 4000);
-  };
-
   return (
     <div className="bg-slate-50 min-h-screen font-sans">
-      
-      {/* Toast Notifikasi Subscribe */}
-      {showSubscribeToast && (
-        <div className="fixed top-20 right-6 z-[99] bg-white border border-gray-200 text-slate-900 rounded-2xl p-4 shadow-2xl flex items-center gap-3 animate-slide-up">
-          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Check className="w-5 h-5 text-slate-900" />
-          </div>
-          <div>
-            <p className="font-extrabold text-sm">Berlangganan Berhasil!</p>
-            <p className="text-xs text-slate-600">Promo spesial Anda akan dikirimkan ke email.</p>
-          </div>
-        </div>
-      )}
 
       {/* =======================================================================
           1. HERO SECTION (BANNER UTAMA DENGAN SEARCH WIDGET)

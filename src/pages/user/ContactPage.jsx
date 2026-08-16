@@ -21,17 +21,20 @@ const ContactPage = () => {
           </div>
       </div>
 
-      <div className="mt-8 bg-white p-6 rounded-lg shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Kirim Pesan</h2>
-        <form onSubmit={(e) => e.preventDefault()}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input className="border rounded px-3 py-2" placeholder="Nama" />
-            <input className="border rounded px-3 py-2" placeholder="Email" />
-            <input className="border rounded px-3 py-2 sm:col-span-2" placeholder="Subjek" />
-            <textarea className="border rounded px-3 py-2 sm:col-span-2" rows="5" placeholder="Pesan" />
-          </div>
-          <button type="submit" className="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Kirim</button>
-        </form>
+      <div className="mt-10 p-6 rounded-3xl border border-blue-100 bg-blue-50/50 text-center">
+        <h2 className="text-lg font-medium text-blue-900 mb-2">Butuh Bantuan Cepat?</h2>
+        <p className="text-sm text-blue-700 mb-5">
+          Gunakan fitur Chatbot di pojok kanan bawah, atau hubungi kami langsung via WhatsApp untuk respons instan.
+        </p>
+        <a
+          href="https://wa.me/628566299954?text=Halo%20Admin%20Subulussalam%20Rent%20Car,%20saya%20memiliki%20pertanyaan%20seputar%20peminjaman%20mobil."
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-sm"
+        >
+          <Phone className="w-4 h-4" />
+          Chat WhatsApp
+        </a>
       </div>
     </div>
   );
