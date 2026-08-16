@@ -11,10 +11,6 @@ const ContactPage = () => {
           <Phone className="w-5 h-5 text-primary-600" />
           <span>0856-6299-954</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Mail className="w-5 h-5 text-primary-600" />
-          <span>info@subulussalam.com</span>
-        </div>
           <div className="flex items-center gap-3">
             <MapPin className="w-5 h-5 text-primary-600 flex-shrink-0" />
             <span>Jl. Hamzah Fansuri No. 12, Dusun Rundeng Tengah, Kampong Pasar Rundeng, Kec. Rundeng, Kota Subulussalam, Aceh 27822</span>
