@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
 
     if (type)         { sql += ' AND tipe = ?';         params.push(type); }
     if (brand)        { sql += ' AND merek = ?';        params.push(brand); }
-    if (transmission) { sql += ' AND transmisi = ?';    params.push(transmission); }
+    if (transmission) { sql += ' AND transmisi LIKE ?'; params.push('%' + transmission + '%'); }
     if (available !== undefined && available !== '') {
       sql += ' AND tersedia = ?';
       params.push(available === 'true' ? 1 : 0);
