@@ -26,6 +26,23 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { chatAPI, carsAPI } from '../../services/api';
 
+const attachSuggestions = (msgs) => {
+  return msgs.map((msg, i) => {
+    if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
+      const prevUserMsg = i > 0 && msgs[i-1].role === 'user' ? msgs[i-1] : null;
+      let finalSuggestions = MAIN_MENU_REPLIES;
+      if (msg.content.includes('Maaf, saya belum mengerti')) {
+        finalSuggestions = MAIN_MENU_REPLIES;
+      } else if (prevUserMsg) {
+        const botReply = getBotResponse(prevUserMsg.content);
+        finalSuggestions = botReply.suggestions || MAIN_MENU_REPLIES;
+      }
+      return { ...msg, suggestions: finalSuggestions };
+    }
+    return msg;
+  });
+};
+
 const ChatbotWidget = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -81,13 +98,7 @@ const ChatbotWidget = () => {
       if (res.data.success) {
         const msgs = res.data.data || [];
         if (msgs.length > 0) {
-          const processedMsgs = msgs.map((msg, i) => {
-             if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
-                 const botReply = getBotResponse(msg.content);
-                 return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
-             }
-             return msg;
-          });
+          const processedMsgs = attachSuggestions(msgs);
           setMessages(processedMsgs);
         }
       }
@@ -108,13 +119,7 @@ const ChatbotWidget = () => {
       if (res.data.success) {
         const conv = res.data.data;
         const msgs = conv.messages && conv.messages.length > 0 ? conv.messages : [WELCOME_MESSAGE];
-        const processedMsgs = msgs.map((msg, i) => {
-             if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
-                 const botReply = getBotResponse(msg.content);
-                 return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
-             }
-             return msg;
-        });
+        const processedMsgs = attachSuggestions(msgs);
         setMessages(processedMsgs);
         setConversationId(conv.conversation.id);
         setErrorMessage('');
@@ -165,13 +170,7 @@ const ChatbotWidget = () => {
             });
 
           if (isDifferent) {
-            const processedMsgs = backendMessages.map((msg, i) => {
-                   if (msg.role === 'bot' && i === backendMessages.length - 1 && !msg.suggestions) {
-                       const botReply = getBotResponse(msg.content);
-                       return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
-                   }
-                   return msg;
-              });
+            const processedMsgs = attachSuggestions(backendMessages);
             
             if (!isOpen && backendMessages.length > messages.length) {
               setHasNotification(true);
@@ -208,13 +207,7 @@ const ChatbotWidget = () => {
         const conv = res.data.data;
         setConversationId(conv.conversation.id);
         const msgs = conv.messages && conv.messages.length > 0 ? conv.messages : [WELCOME_MESSAGE];
-        const processedMsgs = msgs.map((msg, i) => {
-             if (msg.role === 'bot' && i === msgs.length - 1 && !msg.suggestions) {
-                 const botReply = getBotResponse(msg.content);
-                 return { ...msg, suggestions: botReply.suggestions || MAIN_MENU_REPLIES };
-             }
-             return msg;
-        });
+        const processedMsgs = attachSuggestions(msgs);
         setMessages(processedMsgs);
         setIsBackendAvailable(true);
         setLocalAdminMode(false);
