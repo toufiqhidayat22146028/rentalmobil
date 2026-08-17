@@ -59,12 +59,12 @@ const HomePage = () => {
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen font-sans">
+    <div className="min-h-screen font-sans bg-transparent">
 
       {/* =======================================================================
           1. HERO SECTION (BANNER UTAMA DENGAN SEARCH WIDGET)
           ======================================================================= */}
-      <header className="relative bg-slate-50 overflow-hidden pt-12 pb-20 lg:py-32">
+      <header className="relative bg-transparent overflow-hidden pt-12 pb-20 lg:py-32">
         {/* Lingkaran Pendar Latar Belakang */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-10 w-[300px] h-[300px] bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
@@ -205,7 +205,7 @@ const HomePage = () => {
       {/* =======================================================================
           2. FEATURE SECTION: "MENGAPA MEMILIH KAMI" (3 POIN MINIMALIS)
           ======================================================================= */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-xl mx-auto mb-16 space-y-2">
@@ -220,7 +220,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Poin 1 */}
-            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 group">
+            <div className="bg-white/60 backdrop-blur-lg border border-white/50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 group">
               <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
                 <Car className="w-6 h-6" />
               </div>
@@ -231,7 +231,7 @@ const HomePage = () => {
             </div>
 
             {/* Poin 2 */}
-            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 group">
+            <div className="bg-white/60 backdrop-blur-lg border border-white/50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 group">
               <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
                 <ShieldCheck className="w-6 h-6" />
               </div>
@@ -242,7 +242,7 @@ const HomePage = () => {
             </div>
 
             {/* Poin 3 */}
-            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 group">
+            <div className="bg-white/60 backdrop-blur-lg border border-white/50 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 group">
               <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
                 <Clock className="w-6 h-6" />
               </div>
@@ -260,7 +260,7 @@ const HomePage = () => {
       {/* =======================================================================
           3. FEATURED CARS SECTION (GRID 4 MOBIL TERBAIK)
           ======================================================================= */}
-      <section className="py-20 bg-slate-50 border-t border-slate-100">
+      <section className="py-20 bg-transparent border-t border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-12">
@@ -306,9 +306,9 @@ const HomePage = () => {
       {/* =======================================================================
           4. GLASSMORPHIC SUBSCRIBE BANNER (PENGERTIAN LEBIH SEDIKIT / BERSIH)
           ======================================================================= */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-transparent">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative bg-slate-50 rounded-[2.5rem] p-8 sm:p-12 overflow-hidden shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8 group">
+          <div className="relative bg-white/60 backdrop-blur-xl border border-white/50 rounded-[2.5rem] p-8 sm:p-12 overflow-hidden shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8 group">
             
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-green-500/10 rounded-full blur-[80px] pointer-events-none" />

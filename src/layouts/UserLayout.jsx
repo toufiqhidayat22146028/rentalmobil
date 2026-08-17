@@ -24,7 +24,7 @@ const UserLayout = () => {
   return (
     // min-h-screen: Pastikan layout memenuhi minimal tinggi viewport
     // flex flex-col: Susun elemen secara vertikal agar footer selalu di bawah
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-transparent">
       
       {/* NAVBAR - Komponen navigasi atas */}
       <Navbar />
