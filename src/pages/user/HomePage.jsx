@@ -124,14 +124,14 @@ const HomePage = () => {
                     </div>
                   </div>
 
-                  {/* Badge Mengambang 2: Rating */}
+                  {/* Badge Mengambang 2: Kondisi */}
                   <div className="absolute bottom-10 left-0 sm:-left-8 z-20 bg-white/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-white/50 flex items-center gap-3 animate-[bounce_4s_infinite]" style={{ animationDelay: '1s' }}>
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-400 flex items-center justify-center shadow-inner">
                       <Star className="w-5 h-5 text-white fill-current" />
                     </div>
                     <div>
-                      <p className="text-slate-500 text-xs font-medium">Rating Pelanggan</p>
-                      <p className="text-slate-800 text-sm font-bold">4.9 / 5.0</p>
+                      <p className="text-slate-500 text-xs font-medium">Kondisi Mesin</p>
+                      <p className="text-slate-800 text-sm font-bold">Terawat Prima</p>
                     </div>
                   </div>
 
