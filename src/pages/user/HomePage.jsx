@@ -79,7 +79,7 @@ const HomePage = () => {
                 Layanan Sewa Mobil Terpercaya
               </div>
               <h1 className="font-display font-black text-slate-900 text-4xl sm:text-5xl lg:text-6xl leading-[1.1] tracking-tight">
-                Sewa Mobil Impian Anda dengan <span className="text-blue-600">Mudah \& Cepat</span>
+                Sewa Mobil Impian Anda dengan <span className="text-blue-600">Mudah & Cepat</span>
               </h1>
               <p className="text-slate-600 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 font-medium">
                 Sewa mobil impian Anda dengan harga terbaik, proses cepat kurang dari 5 menit, dan layanan pelanggan 24 jam penuh. Nyaman, aman, dan terpercaya.
@@ -88,15 +88,11 @@ const HomePage = () => {
               {/* Fitur Singkat Elegan */}
               <div className="flex flex-wrap justify-center lg:justify-start gap-6 pt-4 text-slate-900 text-xs font-bold uppercase tracking-wider">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
+                  <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
                   <span>Tanpa Biaya Tersembunyi</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
-                  <span>Pembatalan Gratis</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
+                  <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">✓</div>
                   <span>Layanan Antar Rumah</span>
                 </div>
               </div>
@@ -108,12 +104,11 @@ const HomePage = () => {
                 <div className="absolute -inset-4 bg-gradient-to-tr from-blue-600/30 to-cyan-400/30 rounded-[3rem] blur-2xl -z-10 transform -rotate-3" />
                 
                 {/* Kontainer Gambar Utama */}
-                <div className="relative w-full max-w-[480px] lg:max-w-none rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700/50 group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent z-10 pointer-events-none" />
+                <div className="relative w-full max-w-[480px] lg:max-w-none rounded-[2rem] overflow-hidden shadow-2xl border border-white/50 group bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-8 sm:p-12">
                   <img
-                    src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80&auto=format&fit=crop"
-                    alt="Premium Audi Sedan"
-                    className="w-full h-[300px] sm:h-[400px] object-cover transform transition-transform duration-700 group-hover:scale-105"
+                    src="https://icms.bumenredjaabadi.com/assets/cars/thumbnail/car-thumbnail-1636964034.png"
+                    alt="Mitsubishi Xpander"
+                    className="w-full h-auto max-h-[300px] object-contain transform transition-transform duration-700 group-hover:scale-110 drop-shadow-2xl"
                   />
                   
                   {/* Badge Mengambang */}
