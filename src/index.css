@@ -45,37 +45,45 @@
   }
 
   /* Animated Floating 3D Glowing Orbs */
-  body::before, body::after {
+  body::before, body::after, body .orb-3 {
     content: "";
     position: fixed;
-    width: 60vw;
-    height: 60vw;
     border-radius: 50%;
     filter: blur(120px);
     z-index: -1;
-    animation: floatOrb 20s infinite alternate ease-in-out;
     pointer-events: none; /* Let clicks pass through */
   }
 
   body::before {
-    background: rgba(59, 130, 246, 0.25); /* Blue Orb */
+    width: 60vw;
+    height: 60vw;
+    background: rgba(250, 204, 21, 0.15); /* Gold / Kuning Logo */
     top: -20vw;
     left: -10vw;
+    animation: floatOrb1 20s infinite alternate ease-in-out;
   }
 
   body::after {
-    background: rgba(236, 72, 153, 0.2); /* Pink Orb */
+    width: 55vw;
+    height: 55vw;
+    background: rgba(14, 165, 233, 0.15); /* Cyan / Biru Tombol */
     bottom: -20vw;
     right: -10vw;
-    animation-duration: 25s;
-    animation-delay: -5s;
+    animation: floatOrb2 25s infinite alternate ease-in-out;
   }
 
-  @keyframes floatOrb {
+  @keyframes floatOrb1 {
     0% { transform: translate(0, 0) scale(1); }
     33% { transform: translate(15vw, 10vw) scale(1.1); }
     66% { transform: translate(-10vw, 20vw) scale(0.9); }
     100% { transform: translate(5vw, -5vw) scale(1.2); }
+  }
+
+  @keyframes floatOrb2 {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-15vw, -10vw) scale(1.2); }
+    66% { transform: translate(10vw, -20vw) scale(0.8); }
+    100% { transform: translate(-5vw, 5vw) scale(1.1); }
   }
 
   /* Heading menggunakan font display */
