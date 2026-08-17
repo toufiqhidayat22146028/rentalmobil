@@ -9,7 +9,9 @@ import {
   ChevronRight,
   ArrowRight,
   Loader2,
-  MessageCircle
+  MessageCircle,
+  Star,
+  Tag
 } from 'lucide-react';
 import { carsAPI } from '../../services/api';
 import CarCard from '../../components/car/CarCard';
@@ -98,29 +100,52 @@ const HomePage = () => {
               </div>
             </div>
 
-              {/* Kolom Kanan: Visual Mobil Mewah */}
-              <div className="lg:col-span-5 relative flex justify-center items-center mt-10 lg:mt-0">
-                {/* Dekorasi Latar Belakang */}
-                <div className="absolute -inset-4 bg-gradient-to-tr from-blue-600/30 to-cyan-400/30 rounded-[3rem] blur-2xl -z-10 transform -rotate-3" />
+              {/* Kolom Kanan: Visual Mobil Mewah (Dynamic 3D) */}
+              <div className="lg:col-span-5 relative flex justify-center items-center mt-16 lg:mt-0">
+                {/* Dekorasi Latar Belakang (Glowing Podium) */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] h-[300px] sm:h-[400px] bg-gradient-to-tr from-blue-500 to-cyan-300 rounded-full blur-[80px] opacity-30 animate-pulse" />
                 
-                {/* Kontainer Gambar Utama */}
-                <div className="relative w-full max-w-[480px] lg:max-w-none rounded-[2rem] overflow-hidden shadow-2xl border border-white/50 group bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-8 sm:p-12">
+                {/* Kontainer Gambar Utama (Tanpa Kotak) */}
+                <div className="relative w-full max-w-[500px] lg:max-w-none flex items-center justify-center">
                   <img
                     src="https://icms.bumenredjaabadi.com/assets/cars/thumbnail/car-thumbnail-1636964034.png"
                     alt="Mitsubishi Xpander"
-                    className="w-full h-auto max-h-[300px] object-contain transform transition-transform duration-700 group-hover:scale-110 drop-shadow-2xl"
+                    className="relative z-10 w-full h-auto max-h-[350px] object-contain transform hover:scale-110 transition-transform duration-700 drop-shadow-[0_25px_35px_rgba(0,0,0,0.35)]"
                   />
                   
-                  {/* Badge Mengambang */}
-                  <div className="absolute bottom-6 left-6 z-20 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-xl flex items-center gap-3 shadow-lg transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-inner">
+                  {/* Badge Mengambang 1: Kualitas Premium */}
+                  <div className="absolute top-0 right-0 sm:-right-4 z-20 bg-white/80 backdrop-blur-md border border-white/50 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-xl animate-[bounce_3s_infinite]">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-inner">
                       <Car className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-white text-sm font-bold tracking-wide">Kualitas Premium</p>
-                      <p className="text-blue-200 text-xs">Siap Disewa Hari Ini</p>
+                      <p className="text-slate-800 text-sm font-bold tracking-wide">Kualitas Premium</p>
+                      <p className="text-slate-500 text-xs font-medium">Siap Disewa</p>
                     </div>
                   </div>
+
+                  {/* Badge Mengambang 2: Rating */}
+                  <div className="absolute bottom-10 left-0 sm:-left-8 z-20 bg-white/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-white/50 flex items-center gap-3 animate-[bounce_4s_infinite]" style={{ animationDelay: '1s' }}>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-400 flex items-center justify-center shadow-inner">
+                      <Star className="w-5 h-5 text-white fill-current" />
+                    </div>
+                    <div>
+                      <p className="text-slate-500 text-xs font-medium">Rating Pelanggan</p>
+                      <p className="text-slate-800 text-sm font-bold">4.9 / 5.0</p>
+                    </div>
+                  </div>
+
+                  {/* Badge Mengambang 3: Harga */}
+                  <div className="absolute -bottom-6 right-10 z-20 bg-white/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-white/50 flex items-center gap-3 animate-[bounce_3.5s_infinite]" style={{ animationDelay: '0.5s' }}>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-inner">
+                      <Tag className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-slate-500 text-xs font-medium">Harga Terbaik</p>
+                      <p className="text-slate-800 text-sm font-bold">Terjangkau</p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
