@@ -11,7 +11,7 @@ import { CAR_TYPES, CAR_BRANDS } from '../../data/mockCars';
 //   - activeCount: number (jumlah filter aktif)
 // ============================================================
 const CarFilter = ({ filters, onChange, onReset, activeCount }) => {
-  const transmissions = ['Manual', 'Otomatis'];
+  const transmissions = ['Manual', 'Matic'];
   const availabilities = [
     { label: 'Semua', value: '' },
     { label: 'Tersedia', value: 'true' },
