@@ -1,3 +1,6 @@
+// TAMPILAN JENDELA CHATBOT
+// Di file ini Anda bisa mengubah warna header chatbot, tombol, dan letak balon chat.
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 

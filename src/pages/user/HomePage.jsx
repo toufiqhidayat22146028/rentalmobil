@@ -1,3 +1,6 @@
+// HALAMAN BERANDA UTAMA
+// Di sinilah tampilan awal web berada (Teks pahlawan, gambar mobil 3D, dan Footer).
+
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 

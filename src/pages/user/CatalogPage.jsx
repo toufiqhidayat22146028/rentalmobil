@@ -1,3 +1,6 @@
+// HALAMAN KATALOG MOBIL
+// Di file ini sistem menampilkan daftar mobil, filter pencarian, dan logika pengurutan (sorting).
+
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X, Grid3X3, List, Loader2 } from 'lucide-react';

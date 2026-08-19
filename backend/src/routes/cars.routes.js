@@ -1,3 +1,6 @@
+// LOGIKA DATABASE MOBIL (CRUD)
+// Di file ini backend mengambil data dari MySQL, termasuk logika algoritma prioritas (ORDER BY prioritas DESC).
+
 // ============================================================
 // CARS ROUTES — /api/cars (MySQL version)
 // ============================================================

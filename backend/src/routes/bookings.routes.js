@@ -1,3 +1,6 @@
+// LOGIKA TRANSAKSI PEMINJAMAN
+// Di file ini backend mengatur pesanan masuk, status persetujuan admin, dan pengembalian mobil.
+
 // ============================================================
 // BOOKINGS ROUTES — /api/bookings (MySQL version)
 // ============================================================

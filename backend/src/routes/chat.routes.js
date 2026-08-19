@@ -1,3 +1,6 @@
+// LOGIKA OTAK CHATBOT
+// Di file ini sistem mencocokkan kata kunci (keyword) yang diketik pelanggan dengan jawaban otomatis.
+
 // ============================================================
 // CHAT ROUTES - /api/chat (MySQL version)
 // Live chat dengan FAQ bot & admin support

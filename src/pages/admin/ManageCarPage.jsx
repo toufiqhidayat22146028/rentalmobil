@@ -1,3 +1,6 @@
+// HALAMAN KELOLA MOBIL (ADMIN)
+// Di file ini admin bisa melakukan CRUD (Tambah, Edit, Hapus) dan mengatur Prioritas Tampilan.
+
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, Loader2, X, Wrench } from 'lucide-react';
 import Modal from '../../components/common/Modal';
