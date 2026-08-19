@@ -453,6 +453,11 @@ const ChatbotWidget = () => {
       {isOpen && (
         <div className="w-[360px] sm:w-[380px] bg-white rounded-2xl shadow-chatbot border border-gray-100 flex flex-col overflow-hidden animate-slide-up max-h-[540px]">
           {/* HEADER CHAT */}
+          {/* 
+            [SIDANG SKRIPSI INFO] 
+            Jika dosen bertanya: "Bagaimana cara mengubah warna biru di atas chatbot?"
+            Jawaban: "Di file ChatbotWidget.jsx, baris ini menggunakan Tailwind CSS 'bg-gradient-to-r from-blue-600 to-blue-500'."
+          */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500">
             <div className="flex items-center gap-3">
               <div className="relative">

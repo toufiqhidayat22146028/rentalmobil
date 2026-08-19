@@ -59,6 +59,9 @@ router.get('/', async (req, res) => {
       rating:     'rating DESC',
       default:    'prioritas DESC, id DESC',
     };
+    // [SIDANG SKRIPSI INFO]
+    // Jika dosen bertanya: "Di mana kodingan algoritma untuk Prioritas mobil?"
+    // Jawaban: "Di file backend/src/routes/cars.routes.js, menggunakan perintah SQL ORDER BY prioritas DESC."
     sql += ` ORDER BY ${sortMap[sort] || 'prioritas DESC, id DESC'}`;
 
     const [rows] = await pool.query(sql, params);

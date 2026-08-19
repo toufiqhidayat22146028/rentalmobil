@@ -8,6 +8,13 @@ const pool = require('../db/database');
 const { authenticate, adminOnly } = require('../middleware/auth');
 
 // ── UTILITAS BOT ──
+// [SIDANG SKRIPSI INFO]
+// Jika dosen bertanya: "Di mana letak kodingan logika kecerdasan bot?"
+// Jawaban: "Di file backend/src/routes/chat.routes.js. Di sini ada fungsi getBotResponse() yang menggunakan regex /kata kunci/ untuk mencocokkan teks pengguna."
+//
+// Jika dosen minta: "Coba tambahkan kata kunci baru!"
+// Anda cukup menambahkan blok if baru di dalam fungsi getBotResponse di bawah.
+
 const normalizeText = (text = '') => text.toLowerCase().trim();
 
 const formatCurrency = (value) => {
