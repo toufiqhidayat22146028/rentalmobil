@@ -42,7 +42,7 @@ export const getMinReturnDate = (startDate, minDays = 1) => {
 // Format timestamp ke jam: "09:30"
 export const formatTime = (isoString) => {
   return new Date(isoString).toLocaleTimeString('id-ID', {
-    hour: '2-digit', minute: '2-digit', hour12: false,
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta'
   });
 };
 
