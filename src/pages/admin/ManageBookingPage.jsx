@@ -126,8 +126,8 @@ const ManageBookingPage = () => {
         <div className="card flex items-center justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-primary-600 mr-3" /><span className="text-gray-500">Memuat data...</span></div>
       ) : (
         <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-max text-sm">
+          <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full text-sm" style={{ minWidth: '1100px' }}>
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>{['ID', 'Pengguna', 'Kendaraan', 'Tanggal', 'Total', 'Status', 'Pembayaran', 'Aksi'].map(h => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
