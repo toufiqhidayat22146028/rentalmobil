@@ -14,7 +14,7 @@ const AdminLayout = () => {
 
       {/* Area Konten Utama */}
       {/* lg:ml-64: offset sebesar lebar sidebar di desktop */}
-      <main className="flex-1 lg:ml-64 min-h-screen">
+      <main className="flex-1 min-w-0 lg:ml-64 min-h-screen">
         <div className="p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8">
           {/* Outlet: Diisi oleh komponen halaman admin yang aktif */}
           <Outlet />
