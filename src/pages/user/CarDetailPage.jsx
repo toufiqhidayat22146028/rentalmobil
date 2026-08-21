@@ -200,23 +200,6 @@ const CarDetailPage = () => {
             )}
           </div>
 
-          {/* Spesifikasi Teknis */}
-          <div className="card p-6">
-            <h3 className="font-semibold text-gray-800 mb-4">Spesifikasi Teknis</h3>
-            {car.specs && Object.keys(car.specs).length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {Object.entries(car.specs).map(([k, v], idx) => (
-                  <div key={`${k}-${idx}`} className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 capitalize">{k}</p>
-                    <p className="text-sm font-semibold text-gray-700">{v}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 italic">Belum ada informasi spesifikasi teknis ditambahkan.</p>
-            )}
-          </div>
-
           {/* Ulasan Pelanggan */}
           <div className="card p-6">
             <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -346,6 +329,9 @@ const CarDetailPage = () => {
                   <p className="text-xs text-gray-400">+Rp 150.000/hari</p>
                 </button>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                *Catatan: Biaya luar kota adalah flat fee untuk perawatan ekstra dan risiko. Biaya BBM dan Tol ditanggung sepenuhnya oleh penyewa sesuai jarak tujuan.
+              </p>
             </div>
 
             {/* Kalkulasi Biaya */}
