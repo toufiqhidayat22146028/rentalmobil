@@ -127,7 +127,7 @@ const ManageBookingPage = () => {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-max text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>{['ID', 'Pengguna', 'Kendaraan', 'Tanggal', 'Total', 'Status', 'Pembayaran', 'Aksi'].map(h => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
@@ -159,7 +159,7 @@ const ManageBookingPage = () => {
                           {paid ? '✓ Lunas' : '✗ Belum'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <button onClick={() => setDetailBooking(b)} className="p-1.5 text-primary-700 hover:bg-primary-50 rounded-lg" title="Detail"><Eye className="w-4 h-4" /></button>
                           {b.status === 'pending' && <>
