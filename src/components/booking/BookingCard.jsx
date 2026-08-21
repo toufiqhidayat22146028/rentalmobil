@@ -8,8 +8,8 @@ import { formatDateShort } from '../../utils/dateHelper';
 // ============================================================
 
 // Konfigurasi tampilan setiap status peminjaman
-const STATUS_CONFIG = {
-  pending:   { label: 'Menunggu Konfirmasi', color: 'bg-amber-100 text-amber-800',   icon: AlertCircle },
+const statusConfig = {
+  pending:   { label: 'Menunggu Persetujuan', color: 'bg-amber-100 text-amber-800',  icon: Clock },
   approved:  { label: 'Disetujui',           color: 'bg-blue-100 text-blue-800',     icon: CheckCircle },
   active:    { label: 'Sedang Dipinjam',     color: 'bg-primary-100 text-primary-800', icon: Loader },
   completed: { label: 'Selesai',             color: 'bg-gray-100 text-gray-700',     icon: CheckCircle },
@@ -17,8 +17,18 @@ const STATUS_CONFIG = {
 };
 
 const BookingCard = ({ booking, onCancel, showActions = true }) => {
-  const status = STATUS_CONFIG[booking.status] || STATUS_CONFIG.pending;
-  const StatusIcon = status.icon;
+  const config = statusConfig[booking.status] || statusConfig.pending;
+  const StatusIcon = config.icon;
+
+  // Custom label for cancelled paid bookings
+  let finalLabel = config.label;
+  if (booking.status === 'cancelled') {
+    if (booking.paymentStatus === 'paid' || booking.payment_status === 'paid') {
+      finalLabel = 'Menunggu Refund';
+    } else if (booking.paymentStatus === 'dikembalikan' || booking.payment_status === 'dikembalikan') {
+      finalLabel = 'Dana Dikembalikan (Refunded)';
+    }
+  }
 
   if (!booking) return null;
 
@@ -42,9 +52,9 @@ const BookingCard = ({ booking, onCancel, showActions = true }) => {
             <h4 className="font-display font-bold text-gray-800">{booking.carName}</h4>
           </div>
           {/* Badge Status */}
-          <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${status.color}`}>
+          <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${config.color}`}>
             <StatusIcon className="w-3.5 h-3.5" />
-            {status.label}
+            {finalLabel}
           </span>
         </div>
 

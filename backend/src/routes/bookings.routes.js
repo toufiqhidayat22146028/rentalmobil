@@ -68,7 +68,7 @@ router.get('/', authenticate, async (req, res) => {
 // ── GET /api/bookings/stats/summary ──────────────────────
 router.get('/stats/summary', authenticate, adminOnly, async (req, res) => {
   try {
-    const [[{ totalRevenue }]]  = await pool.query("SELECT COALESCE(SUM(total_biaya),0) AS totalRevenue FROM peminjaman WHERE status_pembayaran='lunas'");
+    const [[{ totalRevenue }]]  = await pool.query("SELECT COALESCE(SUM(total_biaya),0) AS totalRevenue FROM peminjaman WHERE status_pembayaran='lunas' AND status IN ('approved', 'active', 'completed')");
     const [[{ totalBookings }]] = await pool.query('SELECT COUNT(*) AS totalBookings FROM peminjaman');
     const [[{ pending }]]       = await pool.query("SELECT COUNT(*) AS pending   FROM peminjaman WHERE status='pending'");
     const [[{ approved }]]      = await pool.query("SELECT COUNT(*) AS approved  FROM peminjaman WHERE status='approved'");
@@ -82,7 +82,7 @@ router.get('/stats/summary', authenticate, adminOnly, async (req, res) => {
     const [carStats] = await pool.query(`
       SELECT c.id, c.nama AS name, c.gambar AS image,
              COUNT(b.id) AS booking_count,
-             COALESCE(SUM(CASE WHEN b.status_pembayaran='lunas' THEN b.total_biaya ELSE 0 END), 0) AS revenue
+             COALESCE(SUM(CASE WHEN b.status_pembayaran='lunas' AND b.status IN ('approved', 'active', 'completed') THEN b.total_biaya ELSE 0 END), 0) AS revenue
       FROM mobil c
       LEFT JOIN peminjaman b ON b.mobil_id = c.id
       GROUP BY c.id, c.nama, c.gambar
@@ -255,4 +255,23 @@ router.post('/:id/pay', authenticate, async (req, res) => {
   }
 });
 
+// -- PATCH /api/bookings/:id/refund ----------------------
+router.patch('/:id/refund', authenticate, adminOnly, async (req, res) => {
+  try {
+    const [[booking]] = await pool.query('SELECT id, status, status_pembayaran FROM peminjaman WHERE id = ?', [req.params.id]);
+    if (!booking) return res.status(404).json({ success: false, message: 'Peminjaman tidak ditemukan.' });
+
+    if (booking.status !== 'cancelled')
+      return res.status(400).json({ success: false, message: 'Hanya pesanan yang dibatalkan yang bisa di-refund.' });
+
+    if (booking.status_pembayaran !== 'lunas')
+      return res.status(400).json({ success: false, message: 'Pesanan belum dibayar, tidak ada yang perlu di-refund.' });
+
+    await pool.query("UPDATE peminjaman SET status_pembayaran = 'dikembalikan' WHERE id = ?", [req.params.id]);
+
+    res.json({ success: true, message: 'Refund berhasil diproses.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 module.exports = router;

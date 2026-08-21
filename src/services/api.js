@@ -143,6 +143,10 @@ export const bookingsAPI = {
   cancel: (id) =>
     axiosInstance.patch(`/bookings/${id}/cancel`),
 
+  /** Refund booking (admin): PATCH /bookings/:id/refund */
+  refund: (id) =>
+    axiosInstance.patch(`/bookings/${id}/refund`),
+
   /** Process payment: POST /bookings/:id/pay */
   pay: (id, data) =>
     axiosInstance.post(`/bookings/${id}/pay`, data),

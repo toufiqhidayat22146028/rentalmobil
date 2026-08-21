@@ -78,6 +78,19 @@ const ManageBookingPage = () => {
     }
   };
 
+  const handleRefund = async (bookingId) => {
+    if (!window.confirm("Apakah Anda yakin ingin memproses refund (pengembalian dana) untuk pesanan ini?")) return;
+    try {
+      const { data } = await bookingsAPI.refund(bookingId);
+      if (data.success) {
+        alert("Refund berhasil diproses.");
+        fetchAll();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Gagal memproses refund");
+    }
+  };
+
   const filtered = bookings.filter(b => {
     if (activeTab !== 'all' && b.status !== activeTab) return false;
     if (search && !b.id.toLowerCase().includes(search.toLowerCase()) &&
@@ -155,6 +168,9 @@ const ManageBookingPage = () => {
                           </>}
                           {b.status === 'approved' && (
                             <button onClick={() => handleAction(b.id, 'completed')} className="text-xs px-2 py-1 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg font-medium">Selesai</button>
+                          )}
+                          {b.status === 'cancelled' && (b.paymentStatus === 'paid' || b.payment_status === 'paid') && (
+                            <button onClick={() => handleRefund(b.id)} className="text-xs px-2 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-medium">Refund</button>
                           )}
                         </div>
                       </td>

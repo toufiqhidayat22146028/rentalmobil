@@ -46,14 +46,16 @@ router.get('/', authenticate, adminOnly, async (req, res) => {
     const filteredRows = [];
 
     rows.forEach(row => {
-      const isPaid = row.status_pembayaran === 'lunas';
+      const isPaid = row.status_pembayaran === 'lunas' || row.status_pembayaran === 'dikembalikan';
+      // Revenue only counts if it is PAID and NOT cancelled/pending (meaning admin has approved it at some point)
+      const isValidRevenue = row.status_pembayaran === 'lunas' && ['approved', 'active', 'completed'].includes(row.status);
       const isCompleted = row.status === 'completed';
       const isCancelled = row.status === 'cancelled';
 
       if (isCurrentPeriod(row.dibuat_pada)) {
         filteredRows.push(row);
         totalTransaksi++;
-        if (isPaid) totalPendapatan += Number(row.total_biaya);
+        if (isValidRevenue) totalPendapatan += Number(row.total_biaya);
         if (isCompleted) transaksiSelesai++;
         if (isCancelled) dibatalkan++;
         if (row.dengan_sopir) denganSopir++;
@@ -65,7 +67,7 @@ router.get('/', authenticate, adminOnly, async (req, res) => {
           };
         }
         popularCarsMap[row.nama_mobil].count++;
-        if (isPaid) popularCarsMap[row.nama_mobil].revenue += Number(row.total_biaya);
+        if (isValidRevenue) popularCarsMap[row.nama_mobil].revenue += Number(row.total_biaya);
       }
     });
 
