@@ -54,11 +54,13 @@ router.get('/', authenticate, adminOnly, async (req, res) => {
 
       if (isCurrentPeriod(row.dibuat_pada)) {
         filteredRows.push(row);
-        totalTransaksi++;
-        if (isValidRevenue) totalPendapatan += Number(row.total_biaya);
+        if (isValidRevenue) {
+          totalTransaksi++;
+          totalPendapatan += Number(row.total_biaya);
+          if (row.dengan_sopir) denganSopir++;
+        }
         if (isCompleted) transaksiSelesai++;
         if (isCancelled) dibatalkan++;
-        if (row.dengan_sopir) denganSopir++;
         
         // Count Popular Cars
         if (!popularCarsMap[row.nama_mobil]) {

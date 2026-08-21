@@ -69,7 +69,7 @@ router.get('/', authenticate, async (req, res) => {
 router.get('/stats/summary', authenticate, adminOnly, async (req, res) => {
   try {
     const [[{ totalRevenue }]]  = await pool.query("SELECT COALESCE(SUM(total_biaya),0) AS totalRevenue FROM peminjaman WHERE status_pembayaran='lunas' AND status IN ('approved', 'active', 'completed')");
-    const [[{ totalBookings }]] = await pool.query('SELECT COUNT(*) AS totalBookings FROM peminjaman');
+    const [[{ totalBookings }]] = await pool.query("SELECT COUNT(*) AS totalBookings FROM peminjaman WHERE status_pembayaran='lunas' AND status IN ('approved', 'active', 'completed')");
     const [[{ pending }]]       = await pool.query("SELECT COUNT(*) AS pending   FROM peminjaman WHERE status='pending'");
     const [[{ approved }]]      = await pool.query("SELECT COUNT(*) AS approved  FROM peminjaman WHERE status='approved'");
     const [[{ active }]]        = await pool.query("SELECT COUNT(*) AS active    FROM peminjaman WHERE status='active'");
